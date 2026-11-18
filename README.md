@@ -26,14 +26,14 @@ The goal is to spend almost no time making study material and almost all of it r
 ## Setup
 
 ```sh
-git clone https://github.com/amierlorenz/mieracle-study.git
-cd mieracle-study
+git clone https://github.com/amierlorenz/encore.git
+cd encore
 brew install gitleaks
 git config core.hooksPath .githooks
 open MieracleStudy.xcodeproj
 ```
 
-Set your team under *Signing & Capabilities*. The app uses the CloudKit container `iCloud.com.mieracle.MieracleStudy`.
+Set your team under *Signing & Capabilities*. The app uses the CloudKit container `iCloud.com.amierlorenz.Encore`.
 
 Run the package tests with the build directory outside iCloud-synced folders (codesigning rejects the metadata iCloud adds):
 

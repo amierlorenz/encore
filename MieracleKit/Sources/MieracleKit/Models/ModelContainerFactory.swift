@@ -3,7 +3,7 @@ import SwiftData
 /// Builds the app's model container.
 public enum ModelContainerFactory {
     /// The CloudKit container shared by the Mac and iPhone apps.
-    public static let cloudKitContainerID = "iCloud.com.mieracle.MieracleStudy"
+    public static let cloudKitContainerID = "iCloud.com.amierlorenz.Encore"
 
     public enum Storage: Sendable {
         /// On-disk store mirrored to the CloudKit private database.

@@ -96,5 +96,5 @@ private struct WebViewHost: UIViewRepresentable {
 #endif
 
 extension Logger {
-    static let rendering = Logger(subsystem: "com.mieracle.MieracleStudy", category: "rendering")
+    static let rendering = Logger(subsystem: "com.amierlorenz.Encore", category: "rendering")
 }

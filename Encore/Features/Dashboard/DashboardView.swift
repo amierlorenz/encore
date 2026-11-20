@@ -10,13 +10,11 @@ struct DashboardView: View {
     @Query(sort: \Exam.date) private var exams: [Exam]
     @Query private var reviews: [ReviewLog]
     @State private var isShowingSettings = false
-    @State private var completed: CanvasItem?
 
     var body: some View {
         let overview = StudyOverview(courses: courses, exams: exams)
         NavigationStack {
             Form {
-                CanvasChangesCard()
                 TodaySection(
                     due: overview.courses.reduce(0) { $0 + $1.due },
                     newRemaining: newRemaining,
@@ -24,7 +22,6 @@ struct DashboardView: View {
                     onReview: { navigation.startSession(SessionConfig(mode: .review)) },
                     onLearn: { navigation.startSession(SessionConfig(mode: .learnNew)) }
                 )
-                AssignmentsSection(onComplete: complete)
                 if !overview.exams.isEmpty {
                     Section("Upcoming exams") {
                         ForEach(overview.exams) { exam in
@@ -57,34 +54,6 @@ struct DashboardView: View {
             }
             #endif
         }
-        .overlay(alignment: .bottom) {
-            if let completed {
-                UndoToast(message: "Assignment completed", onUndo: undoCompletion, onExpire: { clearToast(for: completed) })
-                    .id(completed.canvasID)
-            }
-        }
-    }
-
-    private func complete(_ item: CanvasItem) {
-        withAnimation(.spring(duration: 0.4)) {
-            item.isMarkedDone = true
-            completed = item
-        }
-        modelContext.saveLogging()
-    }
-
-    private func undoCompletion() {
-        guard let completed else { return }
-        withAnimation(.spring(duration: 0.4)) {
-            completed.isMarkedDone = false
-            self.completed = nil
-        }
-        modelContext.saveLogging()
-    }
-
-    private func clearToast(for item: CanvasItem) {
-        guard completed === item else { return }
-        withAnimation(.spring(duration: 0.4)) { completed = nil }
     }
 
     private var reviewedToday: Int {

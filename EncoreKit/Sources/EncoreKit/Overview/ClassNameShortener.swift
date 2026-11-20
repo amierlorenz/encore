@@ -1,7 +1,7 @@
 import Foundation
 
 /// Builds compact class names like "CSC 395 | Swift" from long registrar or
-/// Canvas titles such as "Advanced Swift App Dev-ARKit - CSC-395-01-Fall 2026".
+/// course titles such as "Advanced Swift App Dev-ARKit - CSC-395-01-Fall 2026".
 public enum ClassNameShortener {
     /// A rule-based suggestion: the course code (if any) and a one- or
     /// two-word topic.

@@ -18,12 +18,7 @@ struct ExamDetailView: View {
             Section {
                 TextField("Name", text: $exam.name)
                 DatePicker("Date", selection: $exam.date)
-                    .disabled(exam.canvasItemID != nil)
                 LabeledContent("Class", value: exam.course?.displayName ?? "None")
-            } footer: {
-                if exam.canvasItemID != nil {
-                    Text("The date comes from Canvas and updates on every sync.")
-                }
             }
             Section {
                 ForEach(exam.course?.sortedUnits ?? []) { unit in

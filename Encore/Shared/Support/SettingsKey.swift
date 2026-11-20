@@ -5,7 +5,4 @@ enum SettingsKey {
     static let blursChoices = "blursChoices"
     static let aiModel = "aiModel"
     static let pythonPath = "pythonPath"
-    static let canvasBaseURL = "canvasBaseURL"
-    static let canvasLastSync = "canvasLastSync"
-    static let canvasPendingChanges = "canvasPendingChanges"
 }

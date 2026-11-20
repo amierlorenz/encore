@@ -33,7 +33,6 @@ struct SettingsView: View {
                     Text("Confidence buttons (Sure, Not sure, No idea) are optional and feed the calibration stats. Hiding choices makes you recall the answer before recognizing it.")
                 }
                 AISettingsSection(aiModel: $aiModel)
-                CanvasSettingsSection()
                 #if os(macOS)
                 CodingSettingsSection()
                 #endif

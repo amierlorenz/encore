@@ -5,20 +5,13 @@ import SwiftUI
 
 struct RootView: View {
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.scenePhase) private var scenePhase
     @Environment(VariantGenerationService.self) private var variantGeneration
     @AppStorage(SettingsKey.aiModel) private var aiModel = FoundationModelsProvider.ModelChoice.onDevice.rawValue
     @Environment(AppNavigation.self) private var navigation
-    @Environment(CanvasService.self) private var canvas
 
     var body: some View {
         root
             .task(prepareStore)
-        .onChange(of: scenePhase) { _, phase in
-            if phase == .active {
-                Task { await canvas.syncIfDue(context: modelContext) }
-            }
-        }
     }
 
     private var root: some View {
@@ -46,7 +39,6 @@ struct RootView: View {
             Logger.app.error("Duplicate merge failed: \(error)")
         }
         variantGeneration.start(context: modelContext, provider: FoundationModelsProvider(storedChoice: aiModel))
-        await canvas.syncIfDue(context: modelContext)
     }
 }
 
@@ -54,7 +46,6 @@ struct RootView: View {
     RootView()
         .environment(VariantGenerationService())
         .environment(AppNavigation())
-        .environment(CanvasService())
         .environment(SyncStatusService())
         .modelContainer(try! ModelContainerFactory.make(storage: .inMemory))
 }

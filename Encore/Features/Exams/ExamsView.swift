@@ -4,7 +4,6 @@ import SwiftUI
 
 struct ExamsView: View {
     @Environment(\.modelContext) private var modelContext
-    @Environment(CanvasService.self) private var canvas
     @Query(sort: \Exam.date) private var exams: [Exam]
     @State private var isAdding = false
     @State private var path: [Exam] = []
@@ -12,7 +11,6 @@ struct ExamsView: View {
     var body: some View {
         NavigationStack(path: $path) {
             List {
-                CanvasExamsSection()
                 Section("Upcoming") {
                     ForEach(upcoming) { exam in
                         NavigationLink(value: exam) { ExamRow(exam: exam) }

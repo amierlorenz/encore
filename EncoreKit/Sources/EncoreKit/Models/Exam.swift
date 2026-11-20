@@ -11,8 +11,6 @@ public final class Exam {
     public var externalID: String = UUID().uuidString
     public var name: String = ""
     public var date: Date = Date.now
-    /// The ``CanvasItem/canvasID`` this exam's date is synced from.
-    public var canvasItemID: String?
 
     public var course: Course?
 

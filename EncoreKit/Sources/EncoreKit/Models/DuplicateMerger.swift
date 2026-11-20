@@ -54,7 +54,6 @@ public enum DuplicateMerger {
     private static func absorb(_ keeper: Course, _ duplicate: Course) {
         for unit in duplicate.units ?? [] { unit.course = keeper }
         for exam in duplicate.exams ?? [] { exam.course = keeper }
-        keeper.canvasCourseID = keeper.canvasCourseID ?? duplicate.canvasCourseID
     }
 
     private static func absorb(_ keeper: CourseUnit, _ duplicate: CourseUnit) {
@@ -94,7 +93,6 @@ public enum DuplicateMerger {
         for tag in duplicate.tags ?? [] where !(keeper.tags ?? []).contains(where: { $0 === tag }) {
             keeper.tags?.append(tag)
         }
-        keeper.canvasItemID = keeper.canvasItemID ?? duplicate.canvasItemID
     }
 
     private static func absorb(_ keeper: ConceptTag, _ duplicate: ConceptTag) {

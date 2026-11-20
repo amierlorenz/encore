@@ -14,7 +14,6 @@ public enum EncoreSchemaV1: VersionedSchema {
             ReviewLog.self,
             ConceptTag.self,
             Exam.self,
-            CanvasItem.self,
             SessionPreset.self,
             StudySession.self,
         ]

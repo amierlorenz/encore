@@ -24,14 +24,13 @@ struct DataSettingsSection: View {
         } header: {
             Text("Data")
         } footer: {
-            Text("Settings and your Canvas token are kept.")
+            Text("Settings are kept.")
         }
     }
 
     private func deleteAll() {
         do {
             try DataReset.deleteAll(in: modelContext)
-            UserDefaults.standard.removeObject(forKey: SettingsKey.canvasLastSync)
             status = "All study data deleted."
         } catch {
             Logger.app.error("Delete all failed: \(error)")

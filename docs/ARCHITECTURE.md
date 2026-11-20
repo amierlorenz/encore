@@ -15,7 +15,7 @@ MieracleStudy is a SwiftUI multiplatform app (macOS primary, iPhone secondary). 
  │   Importer   │ ─────────────────────► │ SwiftData store            │ ◄──► CloudKit private DB
  └──────────────┘                        │ Course→Unit→Concept→Prompt │      (Mac ⇄ iPhone)
                                          │ ReviewLog, Exam, ...       │
- Canvas API ──► CanvasSync ──► Exam ───► └─────────────┬──────────────┘
+                                         └─────────────┬──────────────┘
                                                        │ candidates
  VariantGenerator (Foundation Models) ──► variants ────┤
                                                        ▼
@@ -48,9 +48,6 @@ An `AIProvider` protocol isolates model access. `FoundationModelsProvider` uses 
 ### Coding (`MieracleKit/Coding`)
 A `CodeRunner` protocol with a macOS `PythonRunner` that writes the user's solution and a bundled harness to a temporary directory, runs `python3` with a timeout, and returns per-test results. `BigONormalizer` grades complexity answers by normalized equivalence. Coding practice is split into separate prompt kinds — implement, complexity, pattern pick — so each skill can be interleaved on its own.
 
-### Canvas (`MieracleKit/Canvas`)
-`CanvasClient` reads courses, assignments, and calendar events with a bearer token from the Keychain. `CanvasSync` runs at most daily, upserts items, and refreshes the dates of exams linked to them while keeping the user's exam-to-unit mappings.
-
 ### Rendering (`MieracleKit/Rendering`)
 `RichTextView` hosts a `WKWebView` (via a representable) that loads a bundled template over a private `mieracle:` URL scheme; the web view passes scroll gestures to the surrounding page, since its content is always sized to fit. The template's script pulls math out before Markdown parsing (so code spans and underscores survive), renders with marked.js, KaTeX, and highlight.js, and returns the content height, which the view uses as its frame height. A content security policy limits scripts to the bundled files, and clicked links open in the default browser.
 
@@ -58,7 +55,7 @@ A `CodeRunner` protocol with a macOS `PythonRunner` that writes the user's solut
 `StudyOverview` turns courses and exams into dashboard numbers: due and new counts per class, and for each upcoming exam the days left, concepts studied, weak concepts (low ease or repeated lapses), and a session scope for exam prep.
 
 ### App (`MieracleStudy/`)
-Minimal stock SwiftUI: a sidebar with Dashboard, Study, Library, Exams, Import, and Settings. `AppNavigation` lets one screen open another (the dashboard starts sessions), and `CanvasService` and `VariantGenerationService` run background work. Debug builds accept launch arguments (`-localStore YES`, `-seedImport <path>`, `-section <name>`, `-startSession <mode>`) for simulator runs and screenshots.
+Minimal stock SwiftUI: a sidebar with Dashboard, Study, Library, Exams, Import, and Settings. `AppNavigation` lets one screen open another (the dashboard starts sessions), and `VariantGenerationService` runs background work. Debug builds accept launch arguments (`-localStore YES`, `-seedImport <path>`, `-section <name>`, `-startSession <mode>`) for simulator runs and screenshots.
 
 ## Where Things Go
 
@@ -67,10 +64,8 @@ The app follows **MV with services**: views read SwiftData directly (`@Query`) a
 ```
 MieracleStudy/                       app target
 ├── App/                             entry point, root split view, sidebar, debug launch options
-├── Services/                        @Observable objects shared across screens (navigation, Canvas, AI generation)
+├── Services/                        @Observable objects shared across screens (navigation, AI generation)
 ├── Features/<Screen>/               one folder per sidebar screen; subfolders group that screen's parts
-│   ├── Dashboard/Assignments/
-│   ├── Exams/Canvas/
 │   ├── Library/Editors/PromptEditor/
 │   └── Study/{Setup,Runner,Runner/Coding,Summary}/
 └── Shared/
@@ -86,7 +81,6 @@ MieracleKit/Sources/MieracleKit/     package, organized by domain area
 ├── Grading/       Big-O normalizer, full-problem grader
 ├── AI/            provider protocol, Foundation Models, variants, prompt generation
 ├── Coding/        code runner, Python runner, harness
-├── Canvas/        Keychain, client, sync, assignment schedule
 ├── Overview/      dashboard numbers
 └── Rendering/     RichTextView and bundled web assets
 ```

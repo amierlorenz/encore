@@ -10,7 +10,6 @@ final class SettingsSync {
         SettingsKey.asksConfidence,
         SettingsKey.blursChoices,
         SettingsKey.aiModel,
-        SettingsKey.canvasBaseURL,
     ]
 
     private let cloud = NSUbiquitousKeyValueStore.default

@@ -12,7 +12,7 @@ The goal is to spend almost no time making study material and almost all of it r
 - **JSON import:** full concepts with prompts, updated in place by stable ids. A built-in generator prompt and a Claude Code skill produce valid files from slides and documents.
 - **On-device AI:** Foundation Models suggests short-answer grades and rewords questions into variants.
 - **Coding practice (Mac):** write Python solutions graded against test cases, analyze Big-O, and pick the right pattern — practiced separately and interleaved.
-- **Exams and Canvas:** exams map to units and tags and shape scheduling; Canvas sync refreshes linked exam dates daily and suggests exams from assignment names.
+- **Exams:** exams map to units and tags and shape scheduling, ensuring concepts are reviewed before exam dates.
 - **Dashboard:** what's due per class, exam countdowns with readiness, and one-tap review, learn-new, and exam-prep sessions.
 - **Rich content:** Markdown, LaTeX, and highlighted code everywhere.
 
@@ -47,11 +47,11 @@ swift test --scratch-path ~/Library/Caches/EncoreKit-build
 | Path | Contents |
 |---|---|
 | `Encore/` | SwiftUI app target: screens and app wiring |
-| `EncoreKit/` | Local Swift package: models, scheduling, sessions, import, AI, coding, Canvas, rendering |
+| `EncoreKit/` | Local Swift package: models, scheduling, sessions, import, AI, coding, rendering |
 | `Schema/` | JSON Schema for import files |
 | `.claude/skills/study-import/` | Claude Code skill that turns slides and docs into import JSON |
 | `docs/ARCHITECTURE.md` | How the pieces fit together |
 
 ## Secrets
 
-No keys live in this repository. The Canvas token (and any future API key) is entered in Settings and stored only in the Keychain. The pre-commit hook scans staged changes with gitleaks.
+No keys live in this repository. The pre-commit hook scans staged changes with gitleaks.

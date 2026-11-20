@@ -8,7 +8,6 @@ struct EncoreApp: App {
     private let container: ModelContainer
     @State private var variantGeneration = VariantGenerationService()
     @State private var navigation = AppNavigation()
-    @State private var canvas = CanvasService()
     @State private var syncStatus = SyncStatusService()
     @State private var settingsSync = SettingsSync()
 
@@ -21,7 +20,6 @@ struct EncoreApp: App {
             RootView()
                 .environment(variantGeneration)
                 .environment(navigation)
-                .environment(canvas)
                 .environment(syncStatus)
                 .task {
                     syncStatus.start()

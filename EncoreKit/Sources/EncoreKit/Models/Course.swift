@@ -11,8 +11,6 @@ public final class Course {
     public var name: String = ""
     /// A compact label such as "CSC 395 | Swift"; `nil` shows the full name.
     public var shortName: String?
-    /// The linked Canvas course, when Canvas sync is configured.
-    public var canvasCourseID: Int?
     /// Whether coding prompt kinds make sense for this class.
     public var allowsCodingPrompts: Bool = false
     public var createdAt: Date = Date.now

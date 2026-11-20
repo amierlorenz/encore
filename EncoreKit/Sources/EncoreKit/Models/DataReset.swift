@@ -12,7 +12,6 @@ public enum DataReset {
         try context.delete(model: Exam.self)
         try context.delete(model: Course.self)
         try context.delete(model: ConceptTag.self)
-        try context.delete(model: CanvasItem.self)
         try context.delete(model: SessionPreset.self)
         try context.delete(model: StudySession.self)
         try context.save()

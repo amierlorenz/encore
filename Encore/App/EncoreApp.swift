@@ -10,6 +10,9 @@ struct EncoreApp: App {
     @State private var navigation = AppNavigation()
     @State private var syncStatus = SyncStatusService()
     @State private var settingsSync = SettingsSync()
+    #if os(macOS)
+    @State private var handoffWatcher: HandoffWatcher?
+    #endif
 
     init() {
         container = Self.makeContainer()
@@ -28,7 +31,11 @@ struct EncoreApp: App {
                     #endif
                     settingsSync.start()
                     #if os(macOS)
-                    DailyPlanStore.shared.loadFromHandoffFolder()
+                    if handoffWatcher == nil {
+                        let watcher = HandoffWatcher(context: container.mainContext)
+                        handoffWatcher = watcher
+                        watcher.start()
+                    }
                     StateExporter.exportOnLaunch(context: container.mainContext)
                     #endif
                 }

@@ -1,0 +1,60 @@
+{
+  "properties": {
+    "attemptId": {
+      "format": "uuid",
+      "title": "Attemptid",
+      "type": "string"
+    },
+    "promptId": {
+      "title": "Promptid",
+      "type": "string"
+    },
+    "conceptId": {
+      "title": "Conceptid",
+      "type": "string"
+    },
+    "answeredAt": {
+      "format": "date-time",
+      "title": "Answeredat",
+      "type": "string"
+    },
+    "answerText": {
+      "title": "Answertext",
+      "type": "string"
+    },
+    "grade": {
+      "title": "Grade",
+      "type": "integer"
+    },
+    "msTaken": {
+      "title": "Mstaken",
+      "type": "integer"
+    },
+    "sessionKind": {
+      "enum": [
+        "plan",
+        "postclass",
+        "practice"
+      ],
+      "title": "Sessionkind",
+      "type": "string"
+    },
+    "calibrated": {
+      "title": "Calibrated",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "attemptId",
+    "promptId",
+    "conceptId",
+    "answeredAt",
+    "answerText",
+    "grade",
+    "msTaken",
+    "sessionKind",
+    "calibrated"
+  ],
+  "title": "Attempt",
+  "type": "object"
+}

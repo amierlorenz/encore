@@ -13,10 +13,15 @@ public final class SessionEngine {
     public let sessionID = UUID()
     public let config: SessionConfig
     public let startedAt: Date
+    public let sessionKind: String
     public private(set) var queue: [SessionItem]
     public private(set) var position = 0
     public private(set) var summary = SessionSummary()
     public private(set) var isFinished = false
+
+    public var isCalibrated: Bool {
+        sessionKind == "plan"
+    }
 
     @ObservationIgnored private let context: ModelContext
     @ObservationIgnored private let recorder: ReviewRecorder
@@ -64,6 +69,7 @@ public final class SessionEngine {
         self.config = config
         self.context = context
         self.startedAt = now
+        self.sessionKind = "practice"
         self.builder = builder
         self.recorder = ReviewRecorder(context: context, policy: policy)
         self.concepts = Dictionary(allConcepts.map { ($0.externalID, $0) }, uniquingKeysWith: { first, _ in first })
@@ -82,6 +88,7 @@ public final class SessionEngine {
         context: ModelContext,
         supportsCodeExecution: Bool,
         policy: ReviewPolicy = ReviewPolicy(),
+        sessionKind: String = "practice",
         now: Date = .now
     ) throws {
         let allConcepts = try context.fetch(FetchDescriptor<Concept>())
@@ -90,6 +97,7 @@ public final class SessionEngine {
         self.config = config
         self.context = context
         self.startedAt = now
+        self.sessionKind = sessionKind
         self.builder = builder
         self.recorder = ReviewRecorder(context: context, policy: policy)
         self.concepts = Dictionary(allConcepts.map { ($0.externalID, $0) }, uniquingKeysWith: { first, _ in first })
@@ -138,6 +146,7 @@ public final class SessionEngine {
             context: context,
             supportsCodeExecution: supportsCodeExecution,
             policy: effectivePolicy,
+            sessionKind: plan.kind == "postclass" ? "postclass" : "plan",
             now: now
         )
     }
@@ -168,11 +177,22 @@ public final class SessionEngine {
         return max(0, startedAt.addingTimeInterval(TimeInterval(minutes * 60)).timeIntervalSince(now))
     }
 
-    public func answer(_ grade: Grade, confidence: Confidence? = nil, duration: TimeInterval, now: Date = .now) throws {
+    public func answer(_ grade: Grade, confidence: Confidence? = nil, duration: TimeInterval, answerText: String = "", now: Date = .now) throws {
         guard let item = currentItem, let prompt = prompts[item.promptID], let concept = concepts[item.conceptID] else { return }
         let before = (schedule: concept.scheduleState, introducedAt: concept.introducedAt, lastShownAt: prompt.lastShownAt,
                       queue: queue, position: position, summary: summary, requeued: requeued, wasFinished: isFinished, endedAt: record.endedAt)
-        let log = try recorder.record(grade, for: prompt, confidence: confidence, duration: duration, mode: config.mode, sessionID: sessionID, now: now)
+        let log = try recorder.record(
+            grade,
+            for: prompt,
+            confidence: confidence,
+            duration: duration,
+            mode: config.mode,
+            sessionID: sessionID,
+            answerText: answerText,
+            sessionKind: sessionKind,
+            calibrated: isCalibrated,
+            now: now
+        )
         undoStack.append(AnswerSnapshot(
             log: log, concept: concept, schedule: before.schedule, introducedAt: before.introducedAt,
             prompt: prompt, promptLastShownAt: before.lastShownAt, queue: before.queue, position: before.position,
@@ -213,6 +233,8 @@ public final class SessionEngine {
         isFinished = true
         record.endedAt = now
         try context.save()
+        NotificationCenter.default.post(name: .studySessionDidFinish, object: sessionID)
+        StateExportCoordinator.shared.schedulePostSessionExport(context: context)
     }
 
     /// The end-of-session reflection note (*Make It Stick*: reflection).
@@ -235,4 +257,8 @@ extension Array {
     subscript(safe index: Int) -> Element? {
         indices.contains(index) ? self[index] : nil
     }
+}
+
+extension Notification.Name {
+    public static let studySessionDidFinish = Notification.Name("encore.studySessionDidFinish")
 }

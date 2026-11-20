@@ -29,6 +29,7 @@ struct EncoreApp: App {
                     settingsSync.start()
                     #if os(macOS)
                     DailyPlanStore.shared.loadFromHandoffFolder()
+                    StateExporter.exportOnLaunch(context: container.mainContext)
                     #endif
                 }
         }

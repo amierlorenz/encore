@@ -16,6 +16,12 @@ public final class ReviewLog {
     public var wasNew: Bool = false
     public var sessionID: UUID?
 
+    public var attemptID: UUID = UUID()
+    public var answerText: String = ""
+    public var sessionKindRaw: String = "practice"
+    public var calibrated: Bool = true
+    public var exportedAt: Date?
+
     public var concept: Concept?
     public var prompt: Prompt?
 
@@ -27,7 +33,12 @@ public final class ReviewLog {
         mode: StudyMode,
         wasDue: Bool,
         wasNew: Bool,
-        sessionID: UUID? = nil
+        sessionID: UUID? = nil,
+        attemptID: UUID = UUID(),
+        answerText: String = "",
+        sessionKind: String = "practice",
+        calibrated: Bool = true,
+        exportedAt: Date? = nil
     ) {
         self.reviewedAt = reviewedAt
         self.gradeRaw = grade.rawValue
@@ -37,9 +48,18 @@ public final class ReviewLog {
         self.wasDue = wasDue
         self.wasNew = wasNew
         self.sessionID = sessionID
+        self.attemptID = attemptID
+        self.answerText = answerText
+        self.sessionKindRaw = sessionKind
+        self.calibrated = calibrated
+        self.exportedAt = exportedAt
     }
 
     public var grade: Grade { Grade(rawValue: gradeRaw) ?? .good }
     public var confidence: Confidence? { confidenceRaw.flatMap(Confidence.init(rawValue:)) }
     public var mode: StudyMode { StudyMode(rawValue: modeRaw) ?? .review }
+    public var sessionKind: String {
+        get { sessionKindRaw }
+        set { sessionKindRaw = newValue }
+    }
 }

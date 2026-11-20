@@ -19,6 +19,10 @@ public struct ReviewRecorder {
         duration: TimeInterval,
         mode: StudyMode,
         sessionID: UUID? = nil,
+        attemptID: UUID = UUID(),
+        answerText: String = "",
+        sessionKind: String = "practice",
+        calibrated: Bool = true,
         now: Date = .now
     ) throws -> ReviewLog {
         guard let concept = prompt.concept else {
@@ -39,7 +43,20 @@ public struct ReviewRecorder {
         }
         prompt.lastShownAt = now
 
-        let log = ReviewLog(reviewedAt: now, grade: grade, confidence: confidence, duration: duration, mode: mode, wasDue: wasDue, wasNew: isNew, sessionID: sessionID)
+        let log = ReviewLog(
+            reviewedAt: now,
+            grade: grade,
+            confidence: confidence,
+            duration: duration,
+            mode: mode,
+            wasDue: wasDue,
+            wasNew: isNew,
+            sessionID: sessionID,
+            attemptID: attemptID,
+            answerText: answerText,
+            sessionKind: sessionKind,
+            calibrated: calibrated
+        )
         context.insert(log)
         log.concept = concept
         log.prompt = prompt

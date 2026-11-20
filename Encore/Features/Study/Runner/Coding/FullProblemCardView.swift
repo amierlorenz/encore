@@ -8,7 +8,7 @@ struct FullProblemCardView: View {
     let concept: Concept
     let mode: StudyMode
     let blursChoices: Bool
-    let onGrade: (Grade, Confidence?, TimeInterval) -> Void
+    let onGrade: (Grade, Confidence?, TimeInterval, String) -> Void
 
     @State private var stage = 0
     @State private var input = AnswerInput()
@@ -106,6 +106,7 @@ struct FullProblemCardView: View {
     }
 
     private func grade(_ grade: Grade) {
-        onGrade(grade, nil, Date.now.timeIntervalSince(shownAt))
+        let answerText = [input.text, plan, code].filter { !$0.isEmpty }.joined(separator: "\n")
+        onGrade(grade, nil, Date.now.timeIntervalSince(shownAt), answerText)
     }
 }

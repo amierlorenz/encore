@@ -6,6 +6,15 @@ public enum Grade: String, Codable, CaseIterable, Sendable {
     case easy
 
     public var isPass: Bool { self != .again }
+
+    public var numericValue: Int {
+        switch self {
+        case .again: 1
+        case .hard: 2
+        case .good: 3
+        case .easy: 4
+        }
+    }
 }
 
 /// How sure the learner felt before seeing the answer.

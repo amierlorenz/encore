@@ -28,9 +28,9 @@ struct SessionRunnerView: View {
         }
     }
 
-    private func answer(_ grade: Grade, confidence: Confidence?, duration: TimeInterval) {
+    private func answer(_ grade: Grade, confidence: Confidence?, duration: TimeInterval, answerText: String = "") {
         do {
-            try engine.answer(grade, confidence: confidence, duration: duration)
+            try engine.answer(grade, confidence: confidence, duration: duration, answerText: answerText)
             engine.registerAnswerUndo(with: undoManager)
         } catch {
             Logger.app.error("Recording answer failed: \(error)")

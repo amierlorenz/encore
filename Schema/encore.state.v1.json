@@ -1,0 +1,207 @@
+{
+  "$defs": {
+    "Header": {
+      "properties": {
+        "schema": {
+          "enum": [
+            "encore.import",
+            "encore.plan",
+            "encore.state",
+            "encore.library",
+            "encore.attempt",
+            "encore.flag"
+          ],
+          "title": "Schema",
+          "type": "string"
+        },
+        "version": {
+          "title": "Version",
+          "type": "integer"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "producer": {
+          "title": "Producer",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema",
+        "version",
+        "id",
+        "created_at",
+        "producer"
+      ],
+      "title": "Header",
+      "type": "object"
+    },
+    "StateConcept": {
+      "properties": {
+        "conceptId": {
+          "title": "Conceptid",
+          "type": "string"
+        },
+        "introducedAt": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Introducedat"
+        },
+        "suspended": {
+          "default": false,
+          "title": "Suspended",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "conceptId"
+      ],
+      "title": "StateConcept",
+      "type": "object"
+    },
+    "StatePrompt": {
+      "properties": {
+        "promptId": {
+          "title": "Promptid",
+          "type": "string"
+        },
+        "conceptId": {
+          "title": "Conceptid",
+          "type": "string"
+        },
+        "due": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Due"
+        },
+        "ease": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ease"
+        },
+        "interval": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Interval"
+        },
+        "lapses": {
+          "default": 0,
+          "title": "Lapses",
+          "type": "integer"
+        },
+        "introducedAt": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Introducedat"
+        },
+        "suspended": {
+          "default": false,
+          "title": "Suspended",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "promptId",
+        "conceptId"
+      ],
+      "title": "StatePrompt",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "header": {
+      "$ref": "#/$defs/Header"
+    },
+    "exportedAt": {
+      "format": "date-time",
+      "title": "Exportedat",
+      "type": "string"
+    },
+    "appliedBatches": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Appliedbatches",
+      "type": "array"
+    },
+    "planIdSeen": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Planidseen"
+    },
+    "concepts": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/StateConcept"
+      },
+      "title": "Concepts",
+      "type": "array"
+    },
+    "prompts": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/StatePrompt"
+      },
+      "title": "Prompts",
+      "type": "array"
+    }
+  },
+  "required": [
+    "header",
+    "exportedAt"
+  ],
+  "title": "State",
+  "type": "object"
+}

@@ -38,7 +38,7 @@ public struct StudyOverview: Equatable, Sendable {
     @MainActor
     public init(courses: [Course], exams: [Exam], now: Date = .now, calendar: Calendar = .current) {
         self.courses = courses.map { course in
-            let concepts = course.sortedUnits.flatMap { $0.concepts ?? [] }
+            let concepts = course.sortedUnits.flatMap { $0.concepts ?? [] }.filter { !$0.isRetired }
             return CourseCounts(
                 id: course.externalID,
                 name: course.displayName,
@@ -52,7 +52,7 @@ public struct StudyOverview: Equatable, Sendable {
             .filter { $0.date >= today }
             .sorted { $0.date < $1.date }
             .map { exam in
-                let concepts = (exam.course?.sortedUnits ?? []).flatMap { $0.concepts ?? [] }.filter(exam.covers)
+                let concepts = (exam.course?.sortedUnits ?? []).flatMap { $0.concepts ?? [] }.filter { !$0.isRetired }.filter(exam.covers)
                 let studied = concepts.filter { !$0.isNew }
                 return ExamReadiness(
                     id: exam.externalID,

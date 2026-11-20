@@ -30,6 +30,13 @@ struct RevealedAnswerView: View {
             RichTextView(markdown: "**Time** \(c.time) · **Space** \(c.space)\n\n\(c.explanation)")
         case .patternPick(let c):
             RichTextView(markdown: "**\(c.answer)**\n\n\(c.explanation)")
+        case .methodPick(let c):
+            RichTextView(markdown: "**Target:** \(c.targetConceptId)\n\n\(c.explanation)")
+        case .setUp(let c):
+            RichTextView(markdown: c.modelSetUp)
+            if !c.keyPoints.isEmpty {
+                RichTextView(markdown: "**Key points**\n\n" + c.keyPoints.map { "- \($0)" }.joined(separator: "\n"))
+            }
         case .fullProblem(let c):
             RichTextView(markdown: c.revealMarkdown)
         }

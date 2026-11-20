@@ -4,30 +4,40 @@ import Testing
 
 struct ImportValidatorTests {
     func document(prompts: [ImportDocument.Prompt], exams: [ImportDocument.Exam] = []) -> ImportDocument {
-        ImportDocument(courses: [
-            .init(id: "c", name: "Course", units: [
-                .init(id: "c.u", name: "Unit", concepts: [
-                    .init(id: "c.u.k", title: "Concept", explanation: "", prompts: prompts),
+        ImportDocument(
+            header: ImportHeader(schema: "encore.import", version: 2, id: "batch-test"),
+            courses: [
+                .init(id: "c", name: "Course", units: [
+                    .init(id: "c.u", name: "Unit", order: 1, concepts: [
+                        .init(id: "c.u.k", title: "Concept", explanation: "", kind: "definition", status: "active", tier: "core", prompts: prompts),
+                    ]),
                 ]),
-            ]),
-        ], exams: exams)
+            ],
+            exams: exams
+        )
     }
 
     func messages(_ document: ImportDocument, validator: ImportValidator = .init()) -> [String] {
         validator.validate(document).filter { $0.severity == .error }.map(\.description)
     }
 
-    let card = ImportDocument.Prompt(id: "p1", content: .flashcard(.init(front: "Q", back: "A")))
+    let card = ImportDocument.Prompt(id: "p1", kind: "flashcard", status: "active", content: .flashcard(.init(front: "Q", back: "A")))
 
     @Test func sampleFixtureIsValid() throws {
-        let document = try ImportDocument.decode(from: ImportDocumentTests.fixture())
+        let document = try ImportDocument.decode(from: ImportDocumentTests.fixture("valid_import"))
         #expect(ImportValidator().validate(document).isEmpty)
     }
 
     @Test func rejectsWrongSchemaVersion() {
         var doc = document(prompts: [card])
-        doc.schemaVersion = 2
-        #expect(messages(doc).contains { $0.contains("schemaVersion") })
+        doc.header.version = 1
+        #expect(messages(doc).contains { $0.contains("header.version") })
+    }
+
+    @Test func rejectsWrongSchema() {
+        var doc = document(prompts: [card])
+        doc.header.schema = "encore.plan"
+        #expect(messages(doc).contains { $0.contains("header.schema") })
     }
 
     @Test func rejectsDuplicateIDs() {
@@ -48,9 +58,11 @@ struct ImportValidatorTests {
         (.fullProblem(.init(statement: "S", pattern: "P", plan: "x", functionName: "f", starterCode: "", tests: [], time: "O(n)", space: "O(1)", explanation: "")), "Needs at least one test."),
         (.codeImplement(.init(statement: "S", language: .swift, functionName: "f", starterCode: "", tests: [.init(args: [], expected: .null)])), "Swift problems need a signature with parameter and return types."),
         (.codeImplement(.init(statement: "S", language: .swift, functionName: "f", starterCode: "", tests: [.init(args: [.number(1)], expected: .null)], signature: .init(parameters: [], returns: "Int"))), "Has 1 arguments but the signature has 0."),
+        (.methodPick(.init(statement: "", targetConceptId: "k", explanation: "e")), "statement is empty."),
+        (.setUp(.init(statement: "s", targetConceptId: "k", modelSetUp: "")), "modelSetUp is empty."),
     ])
     func rejectsInvalidPromptContent(content: PromptContent, expected: String) {
-        let doc = document(prompts: [.init(id: "p", content: content)])
+        let doc = document(prompts: [.init(id: "p", kind: content.kind.rawValue, content: content)])
         #expect(messages(doc).contains { $0.hasSuffix(expected) })
     }
 
@@ -65,14 +77,14 @@ struct ImportValidatorTests {
 
     @Test func examsMayReferenceStoredIDs() {
         let exam = ImportDocument.Exam(id: "e", courseId: "stored", name: "Final", date: "2026-12-10", unitIds: ["stored.u"])
-        let doc = ImportDocument(courses: [], exams: [exam])
+        let doc = ImportDocument(header: ImportHeader(id: "b"), courses: [], exams: [exam])
         let validator = ImportValidator(knownCourseIDs: ["stored"], knownUnitIDs: ["stored.u"])
         #expect(messages(doc, validator: validator).isEmpty)
     }
 
     @Test func findsIDsDuplicatedAcrossFiles() {
         let first = document(prompts: [card])
-        var second = document(prompts: [.init(id: "p2", content: card.content)])
+        var second = document(prompts: [.init(id: "p2", kind: card.kind, content: card.content)])
         second.courses[0].units[0].concepts[0].id = "c.u.other"
         #expect(ImportValidator.crossDocumentDuplicates([("a.json", first), ("b.json", second)]).isEmpty)
 

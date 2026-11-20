@@ -1,45 +1,87 @@
 import Foundation
 
-/// The import/export file format (schema v1).
+/// The import file format (schema v2).
 ///
-/// Every entity carries a stable `id`. Importing a document whose ids already
-/// exist updates those records in place and keeps their review history.
+/// Shared header: `{schema, version, id, created_at, producer}`.
+/// Decode `encore.import` v2 only. Adding a field does not bump the version;
+/// unknown fields are ignored. An unknown version or schema is refused.
+public struct ImportHeader: Codable, Hashable, Sendable {
+    public var schema: String
+    public var version: Int
+    public var id: String
+    public var createdAt: String
+    public var producer: String
+
+    private enum CodingKeys: String, CodingKey {
+        case schema
+        case version
+        case id
+        case createdAt = "created_at"
+        case producer
+    }
+
+    public init(
+        schema: String = "encore.import",
+        version: Int = 2,
+        id: String,
+        createdAt: String = ISO8601DateFormatter().string(from: Date.now),
+        producer: String = "articulate"
+    ) {
+        self.schema = schema
+        self.version = version
+        self.id = id
+        self.createdAt = createdAt
+        self.producer = producer
+    }
+}
+
 public struct ImportDocument: Codable, Hashable, Sendable {
-    public var schemaVersion: Int
+    public var header: ImportHeader
     public var courses: [Course]
     public var exams: [Exam]
 
-    public init(schemaVersion: Int = EncoreKit.schemaVersion, courses: [Course], exams: [Exam] = []) {
-        self.schemaVersion = schemaVersion
+    public init(header: ImportHeader = ImportHeader(id: UUID().uuidString), courses: [Course], exams: [Exam] = []) {
+        self.header = header
         self.courses = courses
         self.exams = exams
     }
 
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        schemaVersion = try c.decode(Int.self, forKey: .schemaVersion)
+        header = try c.decode(ImportHeader.self, forKey: .header)
         courses = try c.decodeIfPresent([Course].self, forKey: .courses) ?? []
         exams = try c.decodeIfPresent([Exam].self, forKey: .exams) ?? []
     }
 
-    /// Decodes a document, turning decoding failures into readable messages.
+    /// Decodes a document, refusing any version other than v2 and any schema other than encore.import.
     public static func decode(from data: Data) throws(ImportDecodingError) -> ImportDocument {
         do {
-            return try JSONDecoder().decode(ImportDocument.self, from: data)
+            struct HeaderCheck: Decodable {
+                var header: ImportHeader
+            }
+            if let check = try? JSONDecoder().decode(HeaderCheck.self, from: data) {
+                if check.header.schema != "encore.import" {
+                    throw ImportDecodingError(message: "Unsupported schema \"\(check.header.schema)\"; expected encore.import.")
+                }
+                if check.header.version != 2 {
+                    throw ImportDecodingError(message: "Unsupported schema version \(check.header.version); expected 2.")
+                }
+            }
+            let doc = try JSONDecoder().decode(ImportDocument.self, from: data)
+            if doc.header.schema != "encore.import" {
+                throw ImportDecodingError(message: "Unsupported schema \"\(doc.header.schema)\"; expected encore.import.")
+            }
+            if doc.header.version != 2 {
+                throw ImportDecodingError(message: "Unsupported schema version \(doc.header.version); expected 2.")
+            }
+            return doc
+        } catch let error as ImportDecodingError {
+            throw error
         } catch let error as DecodingError {
             throw ImportDecodingError(error)
         } catch {
             throw ImportDecodingError(message: error.localizedDescription)
         }
-    }
-
-    /// Decodes a document from pasted text, ignoring anything around the outermost
-    /// JSON object (such as a Markdown code fence).
-    public static func decode(fromPasted text: String) throws(ImportDecodingError) -> ImportDocument {
-        guard let start = text.firstIndex(of: "{"), let end = text.lastIndex(of: "}"), start < end else {
-            throw ImportDecodingError(message: "No JSON object found in the pasted text.")
-        }
-        return try decode(from: Data(text[start...end].utf8))
     }
 
     /// Encodes with stable, human-readable formatting.
@@ -54,18 +96,28 @@ extension ImportDocument {
     public struct Course: Codable, Hashable, Sendable {
         public var id: String
         public var name: String
-        /// A compact label such as "CSC 395 | Swift".
         public var shortName: String?
-        /// Whether coding prompt kinds belong in this class. Implied when any prompt is a coding kind.
         public var coding: Bool?
         public var units: [Unit]
+        public var contrastGroups: [ContrastGroup]
+        public var sourceFiles: [SourceFile]
 
-        public init(id: String, name: String, shortName: String? = nil, coding: Bool? = nil, units: [Unit]) {
+        public init(
+            id: String,
+            name: String,
+            shortName: String? = nil,
+            coding: Bool? = nil,
+            units: [Unit] = [],
+            contrastGroups: [ContrastGroup] = [],
+            sourceFiles: [SourceFile] = []
+        ) {
             self.id = id
             self.name = name
             self.shortName = shortName
             self.coding = coding
             self.units = units
+            self.contrastGroups = contrastGroups
+            self.sourceFiles = sourceFiles
         }
 
         public init(from decoder: any Decoder) throws {
@@ -75,9 +127,10 @@ extension ImportDocument {
             shortName = try c.decodeIfPresent(String.self, forKey: .shortName)
             coding = try c.decodeIfPresent(Bool.self, forKey: .coding)
             units = try c.decodeIfPresent([Unit].self, forKey: .units) ?? []
+            contrastGroups = try c.decodeIfPresent([ContrastGroup].self, forKey: .contrastGroups) ?? []
+            sourceFiles = try c.decodeIfPresent([SourceFile].self, forKey: .sourceFiles) ?? []
         }
 
-        /// Whether the class should allow coding kinds after import.
         public var impliesCoding: Bool {
             coding ?? units.contains { $0.concepts.contains { $0.prompts.contains { $0.content.kind.isCoding } } }
         }
@@ -86,11 +139,10 @@ extension ImportDocument {
     public struct Unit: Codable, Hashable, Sendable {
         public var id: String
         public var name: String
-        /// Position within the course; defaults to the unit's position in the file.
-        public var order: Int?
+        public var order: Int
         public var concepts: [Concept]
 
-        public init(id: String, name: String, order: Int? = nil, concepts: [Concept]) {
+        public init(id: String, name: String, order: Int = 1, concepts: [Concept] = []) {
             self.id = id
             self.name = name
             self.order = order
@@ -101,7 +153,7 @@ extension ImportDocument {
             let c = try decoder.container(keyedBy: CodingKeys.self)
             id = try c.decode(String.self, forKey: .id)
             name = try c.decode(String.self, forKey: .name)
-            order = try c.decodeIfPresent(Int.self, forKey: .order)
+            order = try c.decode(Int.self, forKey: .order)
             concepts = try c.decodeIfPresent([Concept].self, forKey: .concepts) ?? []
         }
     }
@@ -110,16 +162,35 @@ extension ImportDocument {
         public var id: String
         public var title: String
         public var explanation: String
+        public var kind: String
+        public var status: String
+        public var tier: String
+        public var details: ConceptDetails
+        public var groupIds: [String]
         public var tags: [String]
-        public var resources: [Resource]
         public var prompts: [Prompt]
 
-        public init(id: String, title: String, explanation: String, tags: [String] = [], resources: [Resource] = [], prompts: [Prompt]) {
+        public init(
+            id: String,
+            title: String,
+            explanation: String = "",
+            kind: String = "definition",
+            status: String = "active",
+            tier: String = "standard",
+            details: ConceptDetails = ConceptDetails(),
+            groupIds: [String] = [],
+            tags: [String] = [],
+            prompts: [Prompt] = []
+        ) {
             self.id = id
             self.title = title
             self.explanation = explanation
+            self.kind = kind
+            self.status = status
+            self.tier = tier
+            self.details = details
+            self.groupIds = groupIds
             self.tags = tags
-            self.resources = resources
             self.prompts = prompts
         }
 
@@ -128,36 +199,50 @@ extension ImportDocument {
             id = try c.decode(String.self, forKey: .id)
             title = try c.decode(String.self, forKey: .title)
             explanation = try c.decodeIfPresent(String.self, forKey: .explanation) ?? ""
+            kind = try c.decodeIfPresent(String.self, forKey: .kind) ?? "definition"
+            status = try c.decodeIfPresent(String.self, forKey: .status) ?? "active"
+            tier = try c.decodeIfPresent(String.self, forKey: .tier) ?? "standard"
+            details = try c.decodeIfPresent(ConceptDetails.self, forKey: .details) ?? ConceptDetails()
+            groupIds = try c.decodeIfPresent([String].self, forKey: .groupIds) ?? []
             tags = try c.decodeIfPresent([String].self, forKey: .tags) ?? []
-            resources = try c.decodeIfPresent([Resource].self, forKey: .resources) ?? []
             prompts = try c.decodeIfPresent([Prompt].self, forKey: .prompts) ?? []
         }
     }
 
-    /// A prompt: an `id` plus the flat, `type`-discriminated fields of ``PromptContent``.
     public struct Prompt: Codable, Hashable, Sendable {
         public var id: String
+        public var kind: String
+        public var status: String
         public var content: PromptContent
-
-        public init(id: String, content: PromptContent) {
-            self.id = id
-            self.content = content
-        }
 
         private enum CodingKeys: String, CodingKey {
             case id
+            case kind
+            case status
+            case content
+        }
+
+        public init(id: String, kind: String? = nil, status: String = "active", content: PromptContent) {
+            self.id = id
+            self.kind = kind ?? content.kind.rawValue
+            self.status = status
+            self.content = content
         }
 
         public init(from decoder: any Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
             id = try c.decode(String.self, forKey: .id)
-            content = try PromptContent(from: decoder)
+            kind = try c.decode(String.self, forKey: .kind)
+            status = try c.decodeIfPresent(String.self, forKey: .status) ?? "active"
+            content = try PromptContent.decode(kind: kind, from: c.superDecoder(forKey: .content))
         }
 
         public func encode(to encoder: any Encoder) throws {
             var c = encoder.container(keyedBy: CodingKeys.self)
             try c.encode(id, forKey: .id)
-            try content.encode(to: encoder)
+            try c.encode(kind, forKey: .kind)
+            try c.encode(status, forKey: .status)
+            try content.encodePayload(to: c.superEncoder(forKey: .content))
         }
     }
 
@@ -165,18 +250,24 @@ extension ImportDocument {
         public var id: String
         public var courseId: String
         public var name: String
-        /// `YYYY-MM-DD` (local start of day) or a full ISO 8601 timestamp.
         public var date: String
+        public var kind: String
         public var unitIds: [String]
-        public var tags: [String]
 
-        public init(id: String, courseId: String, name: String, date: String, unitIds: [String] = [], tags: [String] = []) {
+        public init(
+            id: String,
+            courseId: String,
+            name: String,
+            date: String,
+            kind: String = "test",
+            unitIds: [String] = []
+        ) {
             self.id = id
             self.courseId = courseId
             self.name = name
             self.date = date
+            self.kind = kind
             self.unitIds = unitIds
-            self.tags = tags
         }
 
         public init(from decoder: any Decoder) throws {
@@ -185,11 +276,10 @@ extension ImportDocument {
             courseId = try c.decode(String.self, forKey: .courseId)
             name = try c.decode(String.self, forKey: .name)
             date = try c.decode(String.self, forKey: .date)
+            kind = try c.decodeIfPresent(String.self, forKey: .kind) ?? "test"
             unitIds = try c.decodeIfPresent([String].self, forKey: .unitIds) ?? []
-            tags = try c.decodeIfPresent([String].self, forKey: .tags) ?? []
         }
 
-        /// The parsed ``date``, or `nil` if it isn't in a supported format.
         public func parsedDate(in timeZone: TimeZone = .current) -> Date? {
             if let date = try? Date(date, strategy: .iso8601) {
                 return date
@@ -197,36 +287,30 @@ extension ImportDocument {
             let dayOnly = Date.ISO8601FormatStyle(timeZone: timeZone).year().month().day()
             return try? Date(date, strategy: dayOnly)
         }
-
-        /// Formats a date the way ``date`` expects.
-        public static func format(_ date: Date) -> String {
-            date.formatted(.iso8601)
-        }
     }
 }
 
-/// A decoding failure with the JSON path where it happened.
-public struct ImportDecodingError: Error, CustomStringConvertible, Sendable {
-    public let message: String
+public struct ImportDecodingError: Error, Equatable, Sendable, CustomStringConvertible {
+    public var message: String
 
     public init(message: String) {
         self.message = message
     }
 
-    init(_ error: DecodingError) {
-        func path(_ codingPath: [any CodingKey]) -> String {
-            let text = codingPath.map { key in key.intValue.map { "[\($0)]" } ?? ".\(key.stringValue)" }.joined()
-            return text.isEmpty ? "(root)" : String(text.drop { $0 == "." })
-        }
+    public init(_ error: DecodingError) {
         switch error {
         case .keyNotFound(let key, let context):
-            message = "\(path(context.codingPath + [key])): required field is missing."
-        case .typeMismatch(let type, let context):
-            message = "\(path(context.codingPath)): expected \(type). \(context.debugDescription)"
-        case .valueNotFound(let type, let context):
-            message = "\(path(context.codingPath)): expected \(type) but found null."
+            let path = (context.codingPath + [key]).map(\.stringValue).joined(separator: ".")
+            message = "\(path) is missing."
+        case .valueNotFound(_, let context):
+            let path = context.codingPath.map(\.stringValue).joined(separator: ".")
+            message = "\(path) is null or missing."
+        case .typeMismatch(_, let context):
+            let path = context.codingPath.map(\.stringValue).joined(separator: ".")
+            message = "\(path) has the wrong type: \(context.debugDescription)"
         case .dataCorrupted(let context):
-            message = "\(path(context.codingPath)): \(context.debugDescription)"
+            let path = context.codingPath.map(\.stringValue).joined(separator: ".")
+            message = path.isEmpty ? context.debugDescription : "\(path): \(context.debugDescription)"
         @unknown default:
             message = error.localizedDescription
         }

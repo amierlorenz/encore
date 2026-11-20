@@ -56,8 +56,11 @@ public struct ImportValidator: Sendable {
             }
         }
 
-        if document.schemaVersion != EncoreKit.schemaVersion {
-            error("schemaVersion", "Unsupported schema version \(document.schemaVersion); expected \(EncoreKit.schemaVersion).")
+        if document.header.schema != "encore.import" {
+            error("header.schema", "Unsupported schema \"\(document.header.schema)\"; expected encore.import.")
+        }
+        if document.header.version != EncoreKit.schemaVersion {
+            error("header.version", "Unsupported schema version \(document.header.version); expected \(EncoreKit.schemaVersion).")
         }
         if document.courses.isEmpty && document.exams.isEmpty {
             warning("(root)", "The document contains no courses or exams.")
@@ -77,15 +80,24 @@ public struct ImportValidator: Sendable {
                     let conceptPath = "\(unitPath).concepts[\(ki)]"
                     checkID(concept.id, kind: "concept", at: conceptPath)
                     requireText(concept.title, "Concept title", at: conceptPath)
+                    if !["definition", "fact", "method"].contains(concept.kind) {
+                        error("\(conceptPath).kind", "Unknown concept kind \"\(concept.kind)\".")
+                    }
+                    if !["active", "retired"].contains(concept.status) {
+                        error("\(conceptPath).status", "Unknown concept status \"\(concept.status)\".")
+                    }
+                    if !["core", "standard", "background", "out"].contains(concept.tier) {
+                        error("\(conceptPath).tier", "Unknown concept tier \"\(concept.tier)\".")
+                    }
                     if concept.prompts.isEmpty {
                         warning(conceptPath, concept.explanation.isEmpty ? "Concept has no prompts or explanation, so it can't be studied." : "No prompts; the Mac app will write some from the explanation when AI is available.")
-                    }
-                    for (ri, resource) in concept.resources.enumerated() where !["http", "https"].contains(resource.url.scheme ?? "") {
-                        error("\(conceptPath).resources[\(ri)]", "Resource URL must be http or https.")
                     }
                     for (pi, prompt) in concept.prompts.enumerated() {
                         let promptPath = "\(conceptPath).prompts[\(pi)]"
                         checkID(prompt.id, kind: "prompt", at: promptPath)
+                        if !["active", "retired"].contains(prompt.status) {
+                            error("\(promptPath).status", "Unknown prompt status \"\(prompt.status)\".")
+                        }
                         for (path, message) in Self.problems(in: prompt.content) {
                             error(path.isEmpty ? promptPath : "\(promptPath).\(path)", message)
                         }
@@ -109,8 +121,8 @@ public struct ImportValidator: Sendable {
             for unitID in exam.unitIds where !unitIDs.contains(unitID) {
                 error("\(examPath).unitIds", "Unknown unit id \"\(unitID)\".")
             }
-            if exam.unitIds.isEmpty && exam.tags.isEmpty {
-                warning(examPath, "Exam covers no units or tags yet; map them in the app.")
+            if exam.unitIds.isEmpty {
+                warning(examPath, "Exam covers no units yet; map them in the app.")
             }
         }
 
@@ -211,6 +223,14 @@ public struct ImportValidator: Sendable {
             requireText(c.space, "space")
             checkOptionalOptions(c.options, c.correctIndex)
             problems += self.problems(in: .codeImplement(c.implementation)).filter { $0.0 != "statement" }
+        case .methodPick(let c):
+            requireText(c.statement, "statement")
+            requireText(c.targetConceptId, "targetConceptId")
+            requireText(c.explanation, "explanation")
+        case .setUp(let c):
+            requireText(c.statement, "statement")
+            requireText(c.targetConceptId, "targetConceptId")
+            requireText(c.modelSetUp, "modelSetUp")
         }
         return problems
     }

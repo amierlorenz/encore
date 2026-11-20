@@ -1,6 +1,6 @@
 import EncoreKit
 import Testing
 
-@Test func schemaVersionIsOne() {
-    #expect(EncoreKit.schemaVersion == 1)
+@Test func schemaVersionIsTwo() {
+    #expect(EncoreKit.schemaVersion == 2)
 }

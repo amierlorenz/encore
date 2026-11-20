@@ -56,6 +56,8 @@ extension PromptKind {
         case .codeComplexity: "gauge.with.dots.needle.67percent"
         case .patternPick: "puzzlepiece"
         case .fullProblem: "square.stack.3d.forward.dottedline"
+        case .methodPick: "arrow.triangle.branch"
+        case .setUp: "wrench.and.screwdriver"
         }
     }
 }

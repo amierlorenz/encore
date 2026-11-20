@@ -13,6 +13,7 @@ public final class Prompt {
     public var kindRaw: String = PromptKind.flashcard.rawValue
     public var contentData: Data = Data()
     public var originRaw: String = PromptOrigin.manual.rawValue
+    public var status: String = "active"
     /// Flagged variants are excluded from study until reviewed.
     public var isFlagged: Bool = false
     public var lastShownAt: Date?
@@ -29,11 +30,14 @@ public final class Prompt {
     @Relationship(deleteRule: .nullify, inverse: \ReviewLog.prompt)
     public var reviews: [ReviewLog]? = []
 
-    public init(externalID: String = UUID().uuidString, content: PromptContent, origin: PromptOrigin = .manual) {
+    public init(externalID: String = UUID().uuidString, content: PromptContent, origin: PromptOrigin = .manual, status: String = "active") {
         self.externalID = externalID
         self.originRaw = origin.rawValue
+        self.status = status
         self.content = content
     }
+
+    public var isRetired: Bool { status == "retired" }
 
     public var kind: PromptKind {
         PromptKind(rawValue: kindRaw) ?? .flashcard

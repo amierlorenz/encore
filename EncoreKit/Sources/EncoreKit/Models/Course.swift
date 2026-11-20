@@ -13,6 +13,8 @@ public final class Course {
     public var shortName: String?
     /// Whether coding prompt kinds make sense for this class.
     public var allowsCodingPrompts: Bool = false
+    public var contrastGroupsData: Data = Data()
+    public var sourceFilesData: Data = Data()
     public var createdAt: Date = Date.now
 
     @Relationship(deleteRule: .cascade, inverse: \CourseUnit.course)
@@ -24,6 +26,16 @@ public final class Course {
     public init(externalID: String = UUID().uuidString, name: String) {
         self.externalID = externalID
         self.name = name
+    }
+
+    public var contrastGroups: [ContrastGroup] {
+        get { (try? JSONDecoder().decode([ContrastGroup].self, from: contrastGroupsData)) ?? [] }
+        set { contrastGroupsData = (try? JSONEncoder().encode(newValue)) ?? Data() }
+    }
+
+    public var sourceFiles: [SourceFile] {
+        get { (try? JSONDecoder().decode([SourceFile].self, from: sourceFilesData)) ?? [] }
+        set { sourceFilesData = (try? JSONEncoder().encode(newValue)) ?? Data() }
     }
 
     /// The short name when set, otherwise the full name.

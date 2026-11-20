@@ -1,0 +1,603 @@
+{
+  "$defs": {
+    "Citation": {
+      "properties": {
+        "sourceFileId": {
+          "title": "Sourcefileid",
+          "type": "string"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page"
+        },
+        "startSec": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Startsec"
+        },
+        "endSec": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Endsec"
+        },
+        "quote": {
+          "title": "Quote",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "verified",
+            "unverified"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "verifiedBy": {
+          "anyOf": [
+            {
+              "enum": [
+                "text",
+                "ocr",
+                "vl"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Verifiedby"
+        }
+      },
+      "required": [
+        "sourceFileId",
+        "quote",
+        "status"
+      ],
+      "title": "Citation",
+      "type": "object"
+    },
+    "Claim": {
+      "properties": {
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "provenance": {
+          "enum": [
+            "cited",
+            "gapFill"
+          ],
+          "title": "Provenance",
+          "type": "string"
+        },
+        "citations": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Citation"
+          },
+          "title": "Citations",
+          "type": "array"
+        }
+      },
+      "required": [
+        "text",
+        "provenance"
+      ],
+      "title": "Claim",
+      "type": "object"
+    },
+    "Concept": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "explanation": {
+          "title": "Explanation",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "definition",
+            "fact",
+            "method"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "status": {
+          "default": "active",
+          "enum": [
+            "active",
+            "retired"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "tier": {
+          "enum": [
+            "core",
+            "standard",
+            "background",
+            "out"
+          ],
+          "title": "Tier",
+          "type": "string"
+        },
+        "details": {
+          "$ref": "#/$defs/ConceptDetails"
+        },
+        "groupIds": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Groupids",
+          "type": "array"
+        },
+        "tags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Tags",
+          "type": "array"
+        },
+        "prompts": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Prompt"
+          },
+          "title": "Prompts",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "explanation",
+        "kind",
+        "tier",
+        "details"
+      ],
+      "title": "Concept",
+      "type": "object"
+    },
+    "ConceptDetails": {
+      "properties": {
+        "explanationCitations": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Citation"
+          },
+          "title": "Explanationcitations",
+          "type": "array"
+        },
+        "aliases": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Aliases",
+          "type": "array"
+        },
+        "useWhen": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Claim"
+          },
+          "title": "Usewhen",
+          "type": "array"
+        },
+        "conditions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Claim"
+          },
+          "title": "Conditions",
+          "type": "array"
+        },
+        "workedExamples": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Claim"
+          },
+          "title": "Workedexamples",
+          "type": "array"
+        }
+      },
+      "title": "ConceptDetails",
+      "type": "object"
+    },
+    "ContrastGroup": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "question": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Question"
+        },
+        "memberIds": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Memberids",
+          "type": "array"
+        },
+        "contrasts": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ContrastPair"
+          },
+          "title": "Contrasts",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "memberIds"
+      ],
+      "title": "ContrastGroup",
+      "type": "object"
+    },
+    "ContrastPair": {
+      "properties": {
+        "conceptA": {
+          "title": "Concepta",
+          "type": "string"
+        },
+        "conceptB": {
+          "title": "Conceptb",
+          "type": "string"
+        },
+        "decidingFeature": {
+          "$ref": "#/$defs/Claim"
+        }
+      },
+      "required": [
+        "conceptA",
+        "conceptB",
+        "decidingFeature"
+      ],
+      "title": "ContrastPair",
+      "type": "object"
+    },
+    "Course": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "shortName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Shortname"
+        },
+        "coding": {
+          "default": false,
+          "title": "Coding",
+          "type": "boolean"
+        },
+        "units": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Unit"
+          },
+          "title": "Units",
+          "type": "array"
+        },
+        "contrastGroups": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ContrastGroup"
+          },
+          "title": "Contrastgroups",
+          "type": "array"
+        },
+        "sourceFiles": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SourceFile"
+          },
+          "title": "Sourcefiles",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "title": "Course",
+      "type": "object"
+    },
+    "Exam": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "courseId": {
+          "title": "Courseid",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "date": {
+          "format": "date",
+          "title": "Date",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "test",
+            "final"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "unitIds": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Unitids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "courseId",
+        "name",
+        "date",
+        "kind"
+      ],
+      "title": "Exam",
+      "type": "object"
+    },
+    "Header": {
+      "properties": {
+        "schema": {
+          "enum": [
+            "encore.import",
+            "encore.plan",
+            "encore.state",
+            "encore.library",
+            "encore.attempt",
+            "encore.flag"
+          ],
+          "title": "Schema",
+          "type": "string"
+        },
+        "version": {
+          "title": "Version",
+          "type": "integer"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "producer": {
+          "title": "Producer",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema",
+        "version",
+        "id",
+        "created_at",
+        "producer"
+      ],
+      "title": "Header",
+      "type": "object"
+    },
+    "Prompt": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "status": {
+          "default": "active",
+          "enum": [
+            "active",
+            "retired"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "content": {
+          "additionalProperties": true,
+          "default": {},
+          "title": "Content",
+          "type": "object"
+        }
+      },
+      "required": [
+        "id",
+        "kind"
+      ],
+      "title": "Prompt",
+      "type": "object"
+    },
+    "SourceFile": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "origin": {
+          "enum": [
+            "canvas",
+            "dropped",
+            "pocket"
+          ],
+          "title": "Origin",
+          "type": "string"
+        },
+        "displayName": {
+          "title": "Displayname",
+          "type": "string"
+        },
+        "pageCount": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pagecount"
+        },
+        "contentHash": {
+          "title": "Contenthash",
+          "type": "string"
+        },
+        "canvasFileId": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Canvasfileid"
+        }
+      },
+      "required": [
+        "id",
+        "origin",
+        "displayName",
+        "contentHash"
+      ],
+      "title": "SourceFile",
+      "type": "object"
+    },
+    "Unit": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "order": {
+          "title": "Order",
+          "type": "integer"
+        },
+        "concepts": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Concept"
+          },
+          "title": "Concepts",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "order"
+      ],
+      "title": "Unit",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "header": {
+      "$ref": "#/$defs/Header"
+    },
+    "courses": {
+      "items": {
+        "$ref": "#/$defs/Course"
+      },
+      "title": "Courses",
+      "type": "array"
+    },
+    "exams": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Exam"
+      },
+      "title": "Exams",
+      "type": "array"
+    }
+  },
+  "required": [
+    "header",
+    "courses"
+  ],
+  "title": "ImportBatch",
+  "type": "object"
+}

@@ -15,7 +15,7 @@ public struct SessionBuilder: Sendable {
     }
 
     public func build(from candidates: [ConceptSnapshot], now: Date, using rng: inout some RandomNumberGenerator) -> [SessionItem] {
-        var chosen = candidates.filter { config.scope.contains($0) && matchesMode($0, now: now) }
+        var chosen = candidates.filter { !$0.isRetired && config.scope.contains($0) && matchesMode($0, now: now) }
             .compactMap { concept in eligiblePrompt(for: concept, using: &rng).map { (concept, $0) } }
 
         if config.mode == .learnNew {
@@ -46,7 +46,8 @@ public struct SessionBuilder: Sendable {
     /// The prompts of a concept that this session may show.
     public func eligiblePrompts(of concept: ConceptSnapshot) -> [PromptSnapshot] {
         concept.prompts.filter { prompt in
-            config.promptKinds.contains(prompt.kind)
+            !prompt.isRetired
+                && config.promptKinds.contains(prompt.kind)
                 && !prompt.isFlagged
                 && (supportsCodeExecution || !prompt.kind.requiresCodeRunner)
         }

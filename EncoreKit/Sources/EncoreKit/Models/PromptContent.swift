@@ -9,13 +9,15 @@ public enum PromptKind: String, Codable, CaseIterable, Identifiable, Sendable {
     case codeComplexity
     case patternPick
     case fullProblem
+    case methodPick
+    case setUp
 
     public var id: Self { self }
 
     /// Whether the kind is about programming.
     public var isCoding: Bool {
         switch self {
-        case .codeImplement, .codeComplexity, .patternPick, .fullProblem: true
+        case .codeImplement, .codeComplexity, .patternPick, .fullProblem, .methodPick, .setUp: true
         case .flashcard, .shortAnswer, .multipleChoice: false
         }
     }
@@ -23,8 +25,8 @@ public enum PromptKind: String, Codable, CaseIterable, Identifiable, Sendable {
     /// Whether this prompt kind represents free recall (vs recognition).
     public var isFreeRecall: Bool {
         switch self {
-        case .flashcard, .shortAnswer, .codeImplement, .codeComplexity, .fullProblem: true
-        case .multipleChoice, .patternPick: false
+        case .flashcard, .shortAnswer, .codeImplement, .codeComplexity, .fullProblem, .setUp: true
+        case .multipleChoice, .patternPick, .methodPick: false
         }
     }
 
@@ -40,6 +42,8 @@ public enum PromptKind: String, Codable, CaseIterable, Identifiable, Sendable {
         case .codeComplexity: "Code: complexity"
         case .patternPick: "Code: pattern pick"
         case .fullProblem: "Code: full problem"
+        case .methodPick: "Method pick"
+        case .setUp: "Set up"
         }
     }
 }
@@ -60,6 +64,8 @@ public enum PromptContent: Hashable, Sendable {
     case codeComplexity(CodeComplexity)
     case patternPick(PatternPick)
     case fullProblem(FullProblem)
+    case methodPick(MethodPick)
+    case setUp(SetUp)
 
     public var kind: PromptKind {
         switch self {
@@ -70,6 +76,8 @@ public enum PromptContent: Hashable, Sendable {
         case .codeComplexity: .codeComplexity
         case .patternPick: .patternPick
         case .fullProblem: .fullProblem
+        case .methodPick: .methodPick
+        case .setUp: .setUp
         }
     }
 
@@ -83,6 +91,8 @@ public enum PromptContent: Hashable, Sendable {
         case .codeComplexity(let c): c.code
         case .patternPick(let c): c.statement
         case .fullProblem(let c): c.statement
+        case .methodPick(let c): c.statement
+        case .setUp(let c): c.statement
         }
     }
 }
@@ -102,6 +112,8 @@ extension PromptContent {
         switch self {
         case .flashcard(let c): c.back
         case .shortAnswer(let c): c.modelAnswer
+        case .methodPick(let c): c.explanation
+        case .setUp(let c): c.modelSetUp
         default: nil
         }
     }
@@ -126,6 +138,38 @@ extension PromptContent: Codable {
         case type
     }
 
+    public static func decode(kind: String, from decoder: any Decoder) throws -> PromptContent {
+        switch kind {
+        case "flashcard": return .flashcard(try Flashcard(from: decoder))
+        case "shortAnswer": return .shortAnswer(try ShortAnswer(from: decoder))
+        case "multipleChoice": return .multipleChoice(try MultipleChoice(from: decoder))
+        case "codeImplement": return .codeImplement(try CodeImplement(from: decoder))
+        case "codeComplexity": return .codeComplexity(try CodeComplexity(from: decoder))
+        case "patternPick": return .patternPick(try PatternPick(from: decoder))
+        case "fullProblem": return .fullProblem(try FullProblem(from: decoder))
+        case "methodPick": return .methodPick(try MethodPick(from: decoder))
+        case "setUp": return .setUp(try SetUp(from: decoder))
+        default:
+            throw DecodingError.dataCorrupted(
+                DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Unknown prompt kind: \(kind)")
+            )
+        }
+    }
+
+    public func encodePayload(to encoder: any Encoder) throws {
+        switch self {
+        case .flashcard(let c): try c.encode(to: encoder)
+        case .shortAnswer(let c): try c.encode(to: encoder)
+        case .multipleChoice(let c): try c.encode(to: encoder)
+        case .codeImplement(let c): try c.encode(to: encoder)
+        case .codeComplexity(let c): try c.encode(to: encoder)
+        case .patternPick(let c): try c.encode(to: encoder)
+        case .fullProblem(let c): try c.encode(to: encoder)
+        case .methodPick(let c): try c.encode(to: encoder)
+        case .setUp(let c): try c.encode(to: encoder)
+        }
+    }
+
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: TypeKey.self)
         let kind = try container.decode(PromptKind.self, forKey: .type)
@@ -137,21 +181,15 @@ extension PromptContent: Codable {
         case .codeComplexity: self = .codeComplexity(try CodeComplexity(from: decoder))
         case .patternPick: self = .patternPick(try PatternPick(from: decoder))
         case .fullProblem: self = .fullProblem(try FullProblem(from: decoder))
+        case .methodPick: self = .methodPick(try MethodPick(from: decoder))
+        case .setUp: self = .setUp(try SetUp(from: decoder))
         }
     }
 
     public func encode(to encoder: any Encoder) throws {
         var container = encoder.container(keyedBy: TypeKey.self)
         try container.encode(kind, forKey: .type)
-        switch self {
-        case .flashcard(let c): try c.encode(to: encoder)
-        case .shortAnswer(let c): try c.encode(to: encoder)
-        case .multipleChoice(let c): try c.encode(to: encoder)
-        case .codeImplement(let c): try c.encode(to: encoder)
-        case .codeComplexity(let c): try c.encode(to: encoder)
-        case .patternPick(let c): try c.encode(to: encoder)
-        case .fullProblem(let c): try c.encode(to: encoder)
-        }
+        try encodePayload(to: encoder)
     }
 }
 
@@ -437,5 +475,63 @@ public struct CodeTestCase: Codable, Hashable, Sendable {
         args = try c.decode([JSONValue].self, forKey: .args)
         expected = try c.decode(JSONValue.self, forKey: .expected)
         isHidden = try c.decodeIfPresent(Bool.self, forKey: .isHidden) ?? false
+    }
+}
+
+extension PromptContent {
+    /// Pick which method or pattern applies to a problem.
+    public struct MethodPick: Codable, Hashable, Sendable {
+        public var statement: String
+        public var targetConceptId: String
+        public var explanation: String
+        public var verifiedSiblingIds: [String]
+
+        public init(
+            statement: String,
+            targetConceptId: String,
+            explanation: String,
+            verifiedSiblingIds: [String] = []
+        ) {
+            self.statement = statement
+            self.targetConceptId = targetConceptId
+            self.explanation = explanation
+            self.verifiedSiblingIds = verifiedSiblingIds
+        }
+
+        public init(from decoder: any Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            statement = try c.decode(String.self, forKey: .statement)
+            targetConceptId = try c.decode(String.self, forKey: .targetConceptId)
+            explanation = try c.decode(String.self, forKey: .explanation)
+            verifiedSiblingIds = try c.decodeIfPresent([String].self, forKey: .verifiedSiblingIds) ?? []
+        }
+    }
+
+    /// Set up a problem or algorithm before implementing it.
+    public struct SetUp: Codable, Hashable, Sendable {
+        public var statement: String
+        public var targetConceptId: String
+        public var modelSetUp: String
+        public var keyPoints: [String]
+
+        public init(
+            statement: String,
+            targetConceptId: String,
+            modelSetUp: String,
+            keyPoints: [String] = []
+        ) {
+            self.statement = statement
+            self.targetConceptId = targetConceptId
+            self.modelSetUp = modelSetUp
+            self.keyPoints = keyPoints
+        }
+
+        public init(from decoder: any Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            statement = try c.decode(String.self, forKey: .statement)
+            targetConceptId = try c.decode(String.self, forKey: .targetConceptId)
+            modelSetUp = try c.decode(String.self, forKey: .modelSetUp)
+            keyPoints = try c.decodeIfPresent([String].self, forKey: .keyPoints) ?? []
+        }
     }
 }

@@ -1,5 +1,5 @@
 /// Namespace for package-wide constants.
 public enum EncoreKit {
     /// The import/export JSON schema version this build reads and writes.
-    public static let schemaVersion = 1
+    public static let schemaVersion = 2
 }

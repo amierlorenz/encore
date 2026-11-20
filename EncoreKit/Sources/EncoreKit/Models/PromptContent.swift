@@ -25,8 +25,8 @@ public enum PromptKind: String, Codable, CaseIterable, Identifiable, Sendable {
     /// Whether this prompt kind represents free recall (vs recognition).
     public var isFreeRecall: Bool {
         switch self {
-        case .flashcard, .shortAnswer, .codeImplement, .codeComplexity, .fullProblem: true
-        case .multipleChoice, .patternPick: false
+        case .flashcard, .shortAnswer, .codeImplement, .codeComplexity, .fullProblem, .setUp: true
+        case .multipleChoice, .patternPick, .methodPick: false
         }
     }
 

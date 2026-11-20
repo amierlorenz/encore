@@ -1,0 +1,109 @@
+{
+  "header": {
+    "schema": "encore.import",
+    "version": 2,
+    "id": "import-01JD0000000000000000000001",
+    "created_at": "2026-11-20T12:00:00Z",
+    "producer": "articulate 0.1.0 (abc1234)"
+  },
+  "courses": [
+    {
+      "id": "csc301",
+      "name": "Operating Systems",
+      "shortName": "OS",
+      "coding": true,
+      "sourceFiles": [
+        {
+          "id": "f.1234567890abcdef",
+          "origin": "canvas",
+          "displayName": "Lec1.pdf",
+          "pageCount": 40,
+          "contentHash": "sha256abc123",
+          "canvasFileId": 101
+        }
+      ],
+      "contrastGroups": [
+        {
+          "id": "csc301.g.sync",
+          "name": "Synchronization",
+          "question": "Which synchronization primitive is appropriate?",
+          "memberIds": ["csc301.mutex", "csc301.semaphore"],
+          "contrasts": [
+            {
+              "conceptA": "csc301.mutex",
+              "conceptB": "csc301.semaphore",
+              "decidingFeature": {
+                "text": "Mutex allows only one holder; semaphore maintains a counter.",
+                "provenance": "cited",
+                "citations": [
+                  {
+                    "sourceFileId": "f.1234567890abcdef",
+                    "page": 10,
+                    "quote": "A mutex is locked by a single thread.",
+                    "status": "verified",
+                    "verifiedBy": "text"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "units": [
+        {
+          "id": "csc301.u.processes",
+          "name": "Processes",
+          "order": 1,
+          "concepts": [
+            {
+              "id": "csc301.process",
+              "title": "Process",
+              "explanation": "A program in execution.",
+              "kind": "definition",
+              "status": "active",
+              "tier": "core",
+              "details": {
+                "explanationCitations": [
+                  {
+                    "sourceFileId": "f.1234567890abcdef",
+                    "page": 2,
+                    "quote": "A process is a program in execution.",
+                    "status": "verified",
+                    "verifiedBy": "text"
+                  }
+                ],
+                "aliases": ["task", "job"],
+                "useWhen": [],
+                "conditions": [],
+                "workedExamples": []
+              },
+              "groupIds": [],
+              "tags": ["processes"],
+              "prompts": [
+                {
+                  "id": "csc301.process.flashcard.1",
+                  "kind": "flashcard",
+                  "status": "active",
+                  "content": {
+                    "front": "What is a process?",
+                    "back": "A program in execution."
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exams": [
+    {
+      "id": "csc301.x.midterm",
+      "courseId": "csc301",
+      "name": "Midterm",
+      "date": "2026-12-05",
+      "kind": "test",
+      "unitIds": ["csc301.u.processes"]
+    }
+  ]
+}

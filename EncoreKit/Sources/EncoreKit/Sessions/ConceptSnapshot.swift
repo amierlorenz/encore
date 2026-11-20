@@ -13,7 +13,10 @@ public struct ConceptSnapshot: Hashable, Sendable {
     public var ease: Double
     public var lapses: Int
     public var createdAt: Date
+    public var status: String
     public var prompts: [PromptSnapshot]
+
+    public var isRetired: Bool { status == "retired" }
 
     public init(
         id: String,
@@ -26,6 +29,7 @@ public struct ConceptSnapshot: Hashable, Sendable {
         ease: Double = 2.5,
         lapses: Int = 0,
         createdAt: Date = .distantPast,
+        status: String = "active",
         prompts: [PromptSnapshot]
     ) {
         self.id = id
@@ -38,6 +42,7 @@ public struct ConceptSnapshot: Hashable, Sendable {
         self.ease = ease
         self.lapses = lapses
         self.createdAt = createdAt
+        self.status = status
         self.prompts = prompts
     }
 
@@ -53,6 +58,7 @@ public struct ConceptSnapshot: Hashable, Sendable {
             ease: concept.ease,
             lapses: concept.lapses,
             createdAt: concept.createdAt,
+            status: concept.status,
             prompts: (concept.prompts ?? []).map(PromptSnapshot.init)
         )
     }
@@ -63,16 +69,20 @@ public struct PromptSnapshot: Hashable, Sendable {
     public var kind: PromptKind
     public var isFlagged: Bool
     public var lastShownAt: Date?
+    public var status: String
 
-    public init(id: String, kind: PromptKind, isFlagged: Bool = false, lastShownAt: Date? = nil) {
+    public var isRetired: Bool { status == "retired" }
+
+    public init(id: String, kind: PromptKind, isFlagged: Bool = false, lastShownAt: Date? = nil, status: String = "active") {
         self.id = id
         self.kind = kind
         self.isFlagged = isFlagged
         self.lastShownAt = lastShownAt
+        self.status = status
     }
 
     public init(_ prompt: Prompt) {
-        self.init(id: prompt.externalID, kind: prompt.kind, isFlagged: prompt.isFlagged, lastShownAt: prompt.lastShownAt)
+        self.init(id: prompt.externalID, kind: prompt.kind, isFlagged: prompt.isFlagged, lastShownAt: prompt.lastShownAt, status: prompt.status)
     }
 }
 

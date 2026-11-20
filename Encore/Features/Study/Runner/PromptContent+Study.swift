@@ -11,6 +11,8 @@ extension PromptContent {
         case .codeComplexity(let c): "What are the time and space complexity?\n\n```\(c.language.rawValue)\n\(c.code)\n```"
         case .patternPick(let c): "\(c.statement)\n\nWhich approach or data structure fits, and why?"
         case .fullProblem(let c): c.statement
+        case .methodPick(let c): "\(c.statement)\n\nWhich method fits, and why?"
+        case .setUp(let c): "\(c.statement)\n\nHow do you set up the problem, and why?"
         }
     }
 
@@ -37,7 +39,7 @@ extension PromptContent {
         switch self {
         case .flashcard, .multipleChoice, .fullProblem: false
         case .patternPick(let c): c.options == nil
-        case .shortAnswer, .codeComplexity, .codeImplement: true
+        case .shortAnswer, .codeComplexity, .codeImplement, .methodPick, .setUp: true
         }
     }
 
@@ -48,6 +50,10 @@ extension PromptContent {
             GradingRequest(question: c.question, modelAnswer: c.modelAnswer, keyPoints: c.keyPoints, answer: input.text)
         case .patternPick(let c) where c.options == nil:
             GradingRequest(question: c.statement, modelAnswer: "\(c.answer). \(c.explanation)", keyPoints: [c.answer], answer: input.text)
+        case .methodPick(let c):
+            GradingRequest(question: c.statement, modelAnswer: c.explanation, keyPoints: [c.targetConceptId], answer: input.text)
+        case .setUp(let c):
+            GradingRequest(question: c.statement, modelAnswer: c.modelSetUp, keyPoints: c.keyPoints, answer: input.text)
         default:
             nil
         }

@@ -30,6 +30,16 @@ struct EncoreApp: App {
                 }
         }
         .modelContainer(container)
+        #if os(macOS)
+        .commands {
+            CommandGroup(replacing: .importExport) {
+                Button("Import file…") {
+                    openImportPanel(context: container.mainContext)
+                }
+                .keyboardShortcut("i", modifiers: [.command, .shift])
+            }
+        }
+        #endif
     }
 
     private static func makeContainer() -> ModelContainer {

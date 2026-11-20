@@ -42,9 +42,9 @@ struct AnswerArea: View {
                         CodeEditorField(source: $input.text, isDisabled: isRevealed)
                     }
                 }
-            case .patternPick:
+            case .patternPick, .methodPick, .setUp:
                 Section {
-                    AnswerField(title: "Your approach", placeholder: "Approach or data structure, and why", text: $input.text, isDisabled: isRevealed)
+                    AnswerField(title: "Your approach", placeholder: "Approach or method, and why", text: $input.text, isDisabled: isRevealed)
                 }
             case .shortAnswer, .multipleChoice:
                 Section {

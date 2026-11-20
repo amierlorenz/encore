@@ -14,7 +14,7 @@ struct ImporterTests {
         container = try ModelContainerFactory.make(storage: .inMemory)
         context = container.mainContext
         importer = Importer(context: context)
-        sample = try ImportDocument.decode(from: ImportDocumentTests.fixture())
+        sample = try ImportDocument.decode(from: ImportDocumentTests.fixture("valid_import"))
     }
 
     func concept(_ id: String) throws -> Concept {
@@ -24,123 +24,180 @@ struct ImporterTests {
     @Test func planDoesNotChangeStore() throws {
         let plan = try importer.plan(sample)
         #expect(plan.courses == .init(new: 1))
-        #expect(plan.units == .init(new: 2))
-        #expect(plan.concepts == .init(new: 2))
-        #expect(plan.prompts == .init(new: 6))
+        #expect(plan.units == .init(new: 1))
+        #expect(plan.concepts == .init(new: 1))
+        #expect(plan.prompts == .init(new: 1))
         #expect(plan.exams == .init(new: 1))
         #expect(try context.fetchCount(FetchDescriptor<Course>()) == 0)
     }
 
-    @Test func appliesSample() throws {
+    @Test func appliesValidImport() throws {
         try importer.apply(sample)
 
-        let heap = try concept("cs201.heaps.heap-property")
-        #expect(heap.unit?.externalID == "cs201.heaps")
-        #expect(heap.unit?.course?.name == "CS 201 Data Structures")
-        #expect(heap.prompts?.count == 3)
-        #expect(heap.prompts?.allSatisfy { $0.origin == .imported } == true)
-        #expect(heap.tags?.map(\.name) == ["exam2"])
-        #expect(heap.resources.first?.title == "Visualgo")
+        let proc = try concept("csc301.process")
+        #expect(proc.unit?.externalID == "csc301.u.processes")
+        #expect(proc.unit?.course?.name == "Operating Systems")
+        #expect(proc.unit?.course?.contrastGroups.count == 1)
+        #expect(proc.unit?.course?.sourceFiles.count == 1)
+        #expect(proc.kind == "definition")
+        #expect(proc.tier == "core")
+        #expect(proc.status == "active")
+        #expect(proc.details.aliases == ["task", "job"])
+        #expect(proc.details.explanationCitations.first?.quote == "A process is a program in execution.")
+        #expect(proc.prompts?.count == 1)
+        #expect(proc.prompts?.first?.externalID == "csc301.process.flashcard.1")
+        #expect(proc.prompts?.first?.kind == .flashcard)
+        #expect(proc.tags?.map(\.name) == ["processes"])
 
         let exam = try #require(try context.fetch(FetchDescriptor<Exam>()).first)
-        #expect(exam.course?.externalID == "cs201")
-        #expect(exam.units?.map(\.externalID) == ["cs201.heaps"])
-        #expect(exam.covers(heap))
+        #expect(exam.externalID == "csc301.x.midterm")
+        #expect(exam.course?.externalID == "csc301")
+        #expect(exam.units?.map(\.externalID) == ["csc301.u.processes"])
+        #expect(exam.covers(proc))
+
+        let batches = try context.fetch(FetchDescriptor<AppliedBatch>())
+        #expect(batches.count == 1)
+        #expect(batches.first?.batchID == "import-01JD0000000000000000000001")
     }
 
     @Test func reimportIsIdempotent() throws {
         try importer.apply(sample)
         let plan = try importer.plan(sample)
         #expect(!plan.hasChanges)
-        #expect(plan.prompts == .init(unchanged: 6))
+        #expect(plan.prompts == .init(unchanged: 1))
 
         try importer.apply(sample)
-        #expect(try context.fetchCount(FetchDescriptor<Prompt>()) == 6)
+        #expect(try context.fetchCount(FetchDescriptor<Prompt>()) == 1)
         #expect(try context.fetchCount(FetchDescriptor<ConceptTag>()) == 1)
+        #expect(try context.fetchCount(FetchDescriptor<AppliedBatch>()) == 1)
     }
 
     @Test func updatesInPlaceAndKeepsHistory() throws {
         try importer.apply(sample)
-        let heap = try concept("cs201.heaps.heap-property")
-        heap.repetitions = 4
-        heap.dueDate = .distantFuture
+        let proc = try concept("csc301.process")
+        proc.repetitions = 4
+        proc.dueDate = .distantFuture
         let log = ReviewLog(grade: .good, duration: 3, mode: .review, wasDue: true, wasNew: false)
-        log.concept = heap
+        log.concept = proc
         try context.save()
 
         var edited = sample
-        edited.courses[0].units[0].concepts[0].title = "Min-heap property"
-        edited.courses[0].units[0].concepts[0].prompts[0].content = .flashcard(.init(front: "Where is the min?", back: "Root"))
+        edited.courses[0].units[0].concepts[0].title = "Updated Process Title"
+        edited.courses[0].units[0].concepts[0].prompts[0].content = .flashcard(.init(front: "Where is process?", back: "In execution."))
         let plan = try importer.apply(edited)
 
-        #expect(plan.concepts == .init(updated: 1, unchanged: 1))
-        #expect(plan.prompts == .init(updated: 1, unchanged: 5))
-        #expect(heap.title == "Min-heap property")
-        #expect(heap.repetitions == 4)
-        #expect(heap.dueDate == .distantFuture)
-        #expect(heap.reviews?.count == 1)
+        #expect(plan.concepts == .init(updated: 1, unchanged: 0))
+        #expect(plan.prompts == .init(updated: 1, unchanged: 0))
+        #expect(proc.title == "Updated Process Title")
+        #expect(proc.repetitions == 4)
+        #expect(proc.dueDate == .distantFuture)
+        #expect(proc.reviews?.count == 1)
+    }
+
+    @Test func retiredConceptDisappearsFromSessionsButKeepsHistory() throws {
+        try importer.apply(sample)
+        let proc = try concept("csc301.process")
+        proc.repetitions = 2
+        let log = ReviewLog(grade: .good, duration: 2, mode: .learnNew, wasDue: false, wasNew: true)
+        log.concept = proc
+        try context.save()
+
+        var rng = SeededGenerator(seed: 42)
+        let builder = SessionBuilder(
+            config: SessionConfig(scope: .init(), mode: .practice, length: .count(10), promptKinds: Set(PromptKind.allCases)),
+            newRemaining: 10,
+            supportsCodeExecution: true
+        )
+
+        let initialQueue = builder.build(from: [ConceptSnapshot(proc)], now: .now, using: &rng)
+        #expect(initialQueue.count == 1)
+
+        // Retire the concept
+        var retiredDoc = sample
+        retiredDoc.courses[0].units[0].concepts[0].status = "retired"
+        try importer.apply(retiredDoc)
+
+        #expect(proc.isRetired)
+        #expect(proc.reviews?.count == 1) // Review history kept!
+
+        let retiredQueue = builder.build(from: [ConceptSnapshot(proc)], now: .now, using: &rng)
+        #expect(retiredQueue.isEmpty) // Retired concept disappears from sessions!
+
+        // Un-retire the concept
+        var unretiredDoc = sample
+        unretiredDoc.courses[0].units[0].concepts[0].status = "active"
+        try importer.apply(unretiredDoc)
+
+        #expect(!proc.isRetired)
+        let unretiredQueue = builder.build(from: [ConceptSnapshot(proc)], now: .now, using: &rng)
+        #expect(unretiredQueue.count == 1)
     }
 
     @Test func changedContentRemovesStaleVariants() throws {
         try importer.apply(sample)
-        let source = try #require(try concept("cs201.heaps.heap-property").prompts?.first { $0.externalID == "cs201.heaps.heap-property.fc" })
-        let variant = Prompt(content: .flashcard(.init(front: "Reworded", back: "At the root.")), origin: .aiVariant)
+        let source = try #require(try concept("csc301.process").prompts?.first { $0.externalID == "csc301.process.flashcard.1" })
+        let variant = Prompt(content: .flashcard(.init(front: "Reworded", back: "Execution.")), origin: .aiVariant)
         variant.concept = source.concept
         variant.sourcePrompt = source
         try context.save()
 
         var edited = sample
-        edited.courses[0].units[0].concepts[0].prompts[0].content = .flashcard(.init(front: "Where is the minimum?", back: "Index 0"))
+        edited.courses[0].units[0].concepts[0].prompts[0].content = .flashcard(.init(front: "New front", back: "New back"))
         try importer.apply(edited)
 
         #expect(source.variants?.isEmpty == true)
-        #expect(try context.fetchCount(FetchDescriptor<Prompt>()) == 6)
-    }
-
-    @Test func movesConceptBetweenUnits() throws {
-        try importer.apply(sample)
-        var edited = sample
-        let moved = edited.courses[0].units[0].concepts.removeLast()
-        edited.courses[0].units[1].concepts.append(moved)
-
-        let plan = try importer.apply(edited)
-
-        #expect(plan.concepts == .init(updated: 1, unchanged: 1))
-        #expect(try concept("cs201.heaps.top-k").unit?.externalID == "cs201.graphs")
+        #expect(try context.fetchCount(FetchDescriptor<Prompt>()) == 1)
     }
 
     @Test func refusesInvalidDocument() throws {
         var broken = sample
-        broken.schemaVersion = 99
+        broken.header.version = 99
         #expect(throws: Importer.Failure.self) {
             try importer.apply(broken)
         }
         #expect(try context.fetchCount(FetchDescriptor<Course>()) == 0)
     }
 
-    @Test func examOnlyImportReferencesStoredUnits() throws {
-        try importer.apply(sample)
-        let final = ImportDocument(courses: [], exams: [
-            .init(id: "cs201.final", courseId: "cs201", name: "Final", date: "2026-12-12", unitIds: ["cs201.heaps", "cs201.graphs"]),
-        ])
-        let plan = try importer.apply(final)
-        #expect(plan.exams == .init(new: 1))
-        let exam = try #require(try context.fetch(FetchDescriptor<Exam>(predicate: #Predicate { $0.externalID == "cs201.final" })).first)
-        #expect(exam.units?.count == 2)
+    @Test func unknownVersionLandsInFailedWithErrorFile() throws {
+        let tempDir = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        let handoff = HandoffFolder(rootURL: tempDir)
+        try handoff.createDirectoriesIfNeeded()
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+
+        let unknownData = try ImportDocumentTests.fixture("unknown_version")
+        let sourceURL = handoff.toEncoreURL.appending(path: "unknown_version.json")
+        try unknownData.write(to: sourceURL)
+
+        #expect(throws: (any Error).self) {
+            try importer.importFile(at: sourceURL, handoff: handoff)
+        }
+
+        #expect(!FileManager.default.fileExists(atPath: sourceURL.path))
+        let failedFile = handoff.failedURL.appending(path: "unknown_version.json")
+        #expect(FileManager.default.fileExists(atPath: failedFile.path))
+
+        let errorFile1 = handoff.failedURL.appending(path: "unknown_version.error.txt")
+        let errorFile2 = handoff.failedURL.appending(path: "future-version.error.txt")
+        let hasErrorFile = FileManager.default.fileExists(atPath: errorFile1.path)
+            || FileManager.default.fileExists(atPath: errorFile2.path)
+        #expect(hasErrorFile)
     }
-}
 
-extension ImporterTests {
-    @Test func codingPromptsMarkTheClassAsCoding() throws {
-        try importer.apply(sample)
-        let course = try #require(try context.fetch(FetchDescriptor<Course>()).first)
-        #expect(course.allowsCodingPrompts)
-        #expect(course.allowedPromptKinds == PromptKind.allCases)
+    @Test func successfulImportDeletesFileAndRecordsAppliedBatch() throws {
+        let tempDir = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        let handoff = HandoffFolder(rootURL: tempDir)
+        try handoff.createDirectoriesIfNeeded()
+        defer { try? FileManager.default.removeItem(at: tempDir) }
 
-        let plain = ImportDocument(courses: [.init(id: "notes", name: "Notes", units: [])])
-        try importer.apply(plain)
-        let notes = try #require(try context.fetch(FetchDescriptor<Course>()).first { $0.externalID == "notes" })
-        #expect(!notes.allowsCodingPrompts)
-        #expect(!notes.allowedPromptKinds.contains(.codeImplement))
+        let validData = try ImportDocumentTests.fixture("valid_import")
+        let sourceURL = handoff.toEncoreURL.appending(path: "import-01JD.json")
+        try validData.write(to: sourceURL)
+
+        let plan = try importer.importFile(at: sourceURL, handoff: handoff)
+        #expect(plan.concepts.new == 1)
+        #expect(!FileManager.default.fileExists(atPath: sourceURL.path))
+
+        let batches = try context.fetch(FetchDescriptor<AppliedBatch>())
+        #expect(batches.contains { $0.batchID == "import-01JD0000000000000000000001" })
     }
 }

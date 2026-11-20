@@ -66,6 +66,15 @@ struct PromptDraft {
             correctIndex = c.correctIndex ?? 0
             answer = c.answer
             explanation = c.explanation
+        case .methodPick(let c):
+            self.prompt = c.statement
+            answer = c.targetConceptId
+            listText = c.verifiedSiblingIds.joined(separator: "\n")
+            explanation = c.explanation
+        case .setUp(let c):
+            self.prompt = c.statement
+            answer = c.modelSetUp
+            listText = c.keyPoints.joined(separator: "\n")
         case .fullProblem(let c):
             loadSignature(language: c.language, signature: c.signature)
             self.prompt = c.statement
@@ -163,6 +172,22 @@ struct PromptDraft {
                 correctIndex: options.isEmpty ? nil : correctIndex,
                 answer: answer,
                 explanation: explanation
+            ))
+        case .methodPick:
+            try require(answer, "The target concept ID is empty.")
+            return .methodPick(.init(
+                statement: prompt,
+                targetConceptId: answer,
+                explanation: explanation,
+                verifiedSiblingIds: listItems
+            ))
+        case .setUp:
+            try require(answer, "The model set-up is empty.")
+            return .setUp(.init(
+                statement: prompt,
+                targetConceptId: "",
+                modelSetUp: answer,
+                keyPoints: listItems
             ))
         }
     }

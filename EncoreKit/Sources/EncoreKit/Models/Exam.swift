@@ -11,6 +11,7 @@ public final class Exam {
     public var externalID: String = UUID().uuidString
     public var name: String = ""
     public var date: Date = Date.now
+    public var kind: String = "test"
 
     public var course: Course?
 
@@ -20,10 +21,11 @@ public final class Exam {
     @Relationship(deleteRule: .nullify, inverse: \ConceptTag.exams)
     public var tags: [ConceptTag]? = []
 
-    public init(externalID: String = UUID().uuidString, name: String, date: Date) {
+    public init(externalID: String = UUID().uuidString, name: String, date: Date, kind: String = "test") {
         self.externalID = externalID
         self.name = name
         self.date = date
+        self.kind = kind
     }
 
     /// Whether the exam covers a concept through one of its units or tags.

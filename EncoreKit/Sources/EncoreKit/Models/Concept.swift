@@ -11,6 +11,11 @@ public final class Concept {
     public var title: String = ""
     /// Markdown with optional LaTeX, shown after answering.
     public var explanation: String = ""
+    public var kind: String = "definition"
+    public var tier: String = "standard"
+    public var status: String = "active"
+    public var groupIds: [String] = []
+    public var detailsData: Data = Data()
     public var resources: [Resource] = []
     public var createdAt: Date = Date.now
 
@@ -38,15 +43,31 @@ public final class Concept {
         externalID: String = UUID().uuidString,
         title: String,
         explanation: String = "",
+        kind: String = "definition",
+        tier: String = "standard",
+        status: String = "active",
+        details: ConceptDetails = ConceptDetails(),
+        groupIds: [String] = [],
         resources: [Resource] = []
     ) {
         self.externalID = externalID
         self.title = title
         self.explanation = explanation
+        self.kind = kind
+        self.tier = tier
+        self.status = status
+        self.groupIds = groupIds
         self.resources = resources
+        self.detailsData = (try? JSONEncoder().encode(details)) ?? Data()
     }
 
     public var isNew: Bool { introducedAt == nil }
+    public var isRetired: Bool { status == "retired" }
+
+    public var details: ConceptDetails {
+        get { (try? JSONDecoder().decode(ConceptDetails.self, from: detailsData)) ?? ConceptDetails() }
+        set { detailsData = (try? JSONEncoder().encode(newValue)) ?? Data() }
+    }
 }
 
 /// A link to outside material about a concept.

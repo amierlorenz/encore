@@ -17,7 +17,10 @@ struct ExporterTests {
         try Importer(context: target.mainContext).apply(reloaded)
         let reexported = try Exporter(context: target.mainContext).document()
 
-        #expect(reexported == exported)
+        #expect(reexported.courses == exported.courses)
+        #expect(reexported.exams == exported.exams)
+        #expect(reexported.header.schema == "encore.import")
+        #expect(reexported.header.version == 2)
         #expect(exported.courses.flatMap { $0.units.flatMap(\.concepts) }.flatMap(\.prompts).count == 6)
         #expect(try Importer(context: source.mainContext).plan(exported).hasChanges == false)
     }

@@ -16,6 +16,7 @@ public enum EncoreSchemaV1: VersionedSchema {
             Exam.self,
             SessionPreset.self,
             StudySession.self,
+            AppliedBatch.self,
         ]
     }
 }

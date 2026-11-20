@@ -1,13 +1,13 @@
 ---
 name: study-import
-description: Use when turning lecture slides, notes, PDFs, textbook chapters, or other course documents into MieracleStudy import JSON, or when a MieracleStudy import file fails mieracle-validate.
+description: Use when turning lecture slides, notes, PDFs, textbook chapters, or other course documents into Encore import JSON, or when a Encore import file fails encore-validate.
 ---
 
 # Study Import
 
 ## Overview
 
-Produce a schema v1 import file (`Schema/import-v1.schema.json`) that MieracleStudy can upsert. **`mieracle-validate` is the source of truth**: a file isn't done until it prints `OK`.
+Produce a schema v1 import file (`Schema/import-v1.schema.json`) that Encore can upsert. **`encore-validate` is the source of truth**: a file isn't done until it prints `OK`.
 
 ## Workflow
 
@@ -17,7 +17,7 @@ Produce a schema v1 import file (`Schema/import-v1.schema.json`) that MieracleSt
 4. **Write the JSON** following the rules in the generator prompt (Quick Reference below).
 5. **Validate and fix until OK:**
    ```sh
-   swift run --package-path MieracleKit --scratch-path ~/Library/Caches/MieracleKit-build mieracle-validate path/to/file.json
+   swift run --package-path EncoreKit --scratch-path ~/Library/Caches/EncoreKit-build encore-validate path/to/file.json
    ```
    Run from the repo root. Fix every `error:` line; read every `warning:`.
 6. **Report** file paths and counts, then tell the user: Import → *Choose JSON File…* (or paste).
@@ -28,7 +28,7 @@ Produce a schema v1 import file (`Schema/import-v1.schema.json`) that MieracleSt
 2. Give each deck or unit to its own subagent with: the course id/name, its unit id, the existing concept ids, and this skill. Each writes `<unit-slug>.json` containing only its unit (repeat the course `id`/`name`; leave `exams` to one file).
 3. Validate every file together, which also catches ids two agents both used:
    ```sh
-   swift run --package-path MieracleKit --scratch-path ~/Library/Caches/MieracleKit-build mieracle-validate out/*.json
+   swift run --package-path EncoreKit --scratch-path ~/Library/Caches/EncoreKit-build encore-validate out/*.json
    ```
 4. Fix `is also in` errors by renaming the later id, re-run until `across N files: OK`, then import the files one at a time.
 

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/AmierD/MieracleStudy/Schema/import-v1.schema.json",
-  "title": "MieracleStudy import file (schema v1)",
+  "title": "Encore import file (schema v1)",
   "description": "Classes → units → concepts → prompts, plus optional exams. Every id is stable: re-importing an id updates that item in place and keeps its review history. Use kebab-case ids prefixed by their parent's id, e.g. cs201.heaps.top-k.pattern.",
   "type": "object",
   "required": [

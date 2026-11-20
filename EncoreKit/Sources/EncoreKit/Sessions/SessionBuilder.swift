@@ -32,6 +32,17 @@ public struct SessionBuilder: Sendable {
         }
     }
 
+    /// Builds a session queue from a DailyPlan (due items first, new concepts in plan order).
+    public func build(
+        from plan: DailyPlan,
+        candidates: [ConceptSnapshot],
+        now: Date = .now,
+        using rng: inout some RandomNumberGenerator
+    ) -> [SessionItem] {
+        DailyPlanSessionBuilder(plan: plan, supportsCodeExecution: supportsCodeExecution)
+            .build(from: candidates, now: now, using: &rng)
+    }
+
     /// The prompts of a concept that this session may show.
     public func eligiblePrompts(of concept: ConceptSnapshot) -> [PromptSnapshot] {
         concept.prompts.filter { prompt in

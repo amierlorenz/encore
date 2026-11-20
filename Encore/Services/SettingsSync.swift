@@ -10,6 +10,9 @@ final class SettingsSync {
         SettingsKey.asksConfidence,
         SettingsKey.blursChoices,
         SettingsKey.aiModel,
+        SettingsKey.dailyPlanData,
+        SettingsKey.planIdSeen,
+        SettingsKey.planCreatedAt,
     ]
 
     private let cloud = NSUbiquitousKeyValueStore.default

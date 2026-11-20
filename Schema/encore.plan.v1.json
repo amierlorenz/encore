@@ -1,0 +1,199 @@
+{
+  "$defs": {
+    "ExamFocus": {
+      "properties": {
+        "examId": {
+          "title": "Examid",
+          "type": "string"
+        },
+        "rampDay": {
+          "title": "Rampday",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "examId",
+        "rampDay"
+      ],
+      "title": "ExamFocus",
+      "type": "object"
+    },
+    "Header": {
+      "properties": {
+        "schema": {
+          "enum": [
+            "encore.import",
+            "encore.plan",
+            "encore.state",
+            "encore.library",
+            "encore.attempt",
+            "encore.flag"
+          ],
+          "title": "Schema",
+          "type": "string"
+        },
+        "version": {
+          "title": "Version",
+          "type": "integer"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "producer": {
+          "title": "Producer",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema",
+        "version",
+        "id",
+        "created_at",
+        "producer"
+      ],
+      "title": "Header",
+      "type": "object"
+    },
+    "PlanNew": {
+      "properties": {
+        "conceptId": {
+          "title": "Conceptid",
+          "type": "string"
+        },
+        "promptIds": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Promptids",
+          "type": "array"
+        },
+        "reason": {
+          "enum": [
+            "core",
+            "standard",
+            "background",
+            "correction",
+            "postclassSkipped",
+            "reading"
+          ],
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "conceptId",
+        "reason"
+      ],
+      "title": "PlanNew",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "header": {
+      "$ref": "#/$defs/Header"
+    },
+    "kind": {
+      "enum": [
+        "daily",
+        "postclass"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "date": {
+      "format": "date",
+      "title": "Date",
+      "type": "string"
+    },
+    "validUntil": {
+      "format": "date-time",
+      "title": "Validuntil",
+      "type": "string"
+    },
+    "reviewScope": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Reviewscope",
+      "type": "array"
+    },
+    "new": {
+      "items": {
+        "$ref": "#/$defs/PlanNew"
+      },
+      "title": "New",
+      "type": "array"
+    },
+    "examFocus": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ExamFocus"
+      },
+      "title": "Examfocus",
+      "type": "array"
+    },
+    "budgetMinutes": {
+      "additionalProperties": true,
+      "title": "Budgetminutes",
+      "type": "object"
+    },
+    "kindsMix": {
+      "additionalProperties": true,
+      "title": "Kindsmix",
+      "type": "object"
+    },
+    "readingShare": {
+      "default": 0.0,
+      "title": "Readingshare",
+      "type": "number"
+    },
+    "intervalCaps": {
+      "default": [],
+      "items": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Intervalcaps",
+      "type": "array"
+    },
+    "importBatch": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Importbatch"
+    },
+    "macPractice": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Macpractice",
+      "type": "array"
+    }
+  },
+  "required": [
+    "header",
+    "kind",
+    "date",
+    "validUntil",
+    "reviewScope",
+    "new",
+    "budgetMinutes",
+    "kindsMix"
+  ],
+  "title": "Plan",
+  "type": "object"
+}

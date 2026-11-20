@@ -75,6 +75,73 @@ public final class SessionEngine {
         isFinished = queue.isEmpty
     }
 
+    /// Starts a session directly with a pre-built queue.
+    public init(
+        queue: [SessionItem],
+        config: SessionConfig,
+        context: ModelContext,
+        supportsCodeExecution: Bool,
+        policy: ReviewPolicy = ReviewPolicy(),
+        now: Date = .now
+    ) throws {
+        let allConcepts = try context.fetch(FetchDescriptor<Concept>())
+        let builder = SessionBuilder(config: config, newRemaining: 0, supportsCodeExecution: supportsCodeExecution)
+
+        self.config = config
+        self.context = context
+        self.startedAt = now
+        self.builder = builder
+        self.recorder = ReviewRecorder(context: context, policy: policy)
+        self.concepts = Dictionary(allConcepts.map { ($0.externalID, $0) }, uniquingKeysWith: { first, _ in first })
+        self.prompts = Dictionary(allConcepts.flatMap { $0.prompts ?? [] }.map { ($0.externalID, $0) }, uniquingKeysWith: { first, _ in first })
+        self.queue = queue
+        self.record = StudySession(sessionID: sessionID, startedAt: now, configData: config.encoded())
+        context.insert(record)
+        try context.save()
+        isFinished = queue.isEmpty
+    }
+
+    /// Starts a session from a DailyPlan, optionally taking a specific ~5-minute chunk.
+    public convenience init(
+        plan: DailyPlan,
+        chunkIndex: Int? = nil,
+        context: ModelContext,
+        supportsCodeExecution: Bool,
+        policy: ReviewPolicy? = nil,
+        now: Date = .now
+    ) throws {
+        var rng = SystemRandomNumberGenerator()
+        let allConcepts = try context.fetch(FetchDescriptor<Concept>())
+        let snapshots = allConcepts.map(ConceptSnapshot.init)
+        let builder = DailyPlanSessionBuilder(plan: plan, supportsCodeExecution: supportsCodeExecution)
+        let fullQueue = builder.build(from: snapshots, now: now, using: &rng)
+
+        let queue: [SessionItem]
+        if let chunkIndex {
+            let chunks = DailyPlanSessionBuilder.chunkQueue(fullQueue)
+            queue = chunks[safe: chunkIndex] ?? []
+        } else {
+            queue = fullQueue
+        }
+
+        let intervalCapsMap = Dictionary(plan.intervalCaps.map { ($0.courseId, $0.maxDays) }, uniquingKeysWith: { first, _ in first })
+        let effectivePolicy = policy ?? ReviewPolicy(intervalCaps: intervalCapsMap)
+        let config = SessionConfig(
+            scope: .init(courseIDs: Set(plan.reviewScope)),
+            mode: .review,
+            length: .all,
+            order: .interleaved
+        )
+        try self.init(
+            queue: queue,
+            config: config,
+            context: context,
+            supportsCodeExecution: supportsCodeExecution,
+            policy: effectivePolicy,
+            now: now
+        )
+    }
+
     public var currentItem: SessionItem? {
         isFinished ? nil : queue[safe: position]
     }

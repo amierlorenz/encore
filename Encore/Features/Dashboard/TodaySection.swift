@@ -1,3 +1,4 @@
+import EncoreKit
 import SwiftUI
 
 /// Today's numbers as glass cards, with the main actions below. Placed in the
@@ -6,8 +7,12 @@ struct TodaySection: View {
     let due: Int
     let newRemaining: Int
     let reviewedToday: Int
+    var plan: DailyPlan? = nil
+    var isPlanDone: Bool = false
     let onReview: () -> Void
     let onLearn: () -> Void
+    var onStartPlan: (() -> Void)? = nil
+    var onKeepPracticing: (() -> Void)? = nil
 
     var body: some View {
         Section {
@@ -21,20 +26,46 @@ struct TodaySection: View {
                 }
                 .frame(maxWidth: 640)
                 HStack(spacing: 12) {
-                    Button(action: onReview) {
-                        Label("Review Due", systemImage: "arrow.counterclockwise")
-                            .font(.headline)
-                            .lineLimit(1)
+                    if let plan, !plan.isExpired() {
+                        if !plan.isAvailable() {
+                            Button(action: {}) {
+                                Label("Ready at 6:00 AM", systemImage: "clock")
+                                    .font(.headline)
+                                    .lineLimit(1)
+                            }
+                            .buttonStyle(.glass)
+                            .disabled(true)
+                        } else if isPlanDone {
+                            Button(action: { onKeepPracticing?() }) {
+                                Label("Keep Practicing", systemImage: "sparkles")
+                                    .font(.headline)
+                                    .lineLimit(1)
+                            }
+                            .buttonStyle(.glassProminent)
+                        } else {
+                            Button(action: { onStartPlan?() }) {
+                                Label("Today's Session", systemImage: "play.circle.fill")
+                                    .font(.headline)
+                                    .lineLimit(1)
+                            }
+                            .buttonStyle(.glassProminent)
+                        }
+                    } else {
+                        Button(action: onReview) {
+                            Label("Review Due", systemImage: "arrow.counterclockwise")
+                                .font(.headline)
+                                .lineLimit(1)
+                        }
+                        .buttonStyle(.glassProminent)
+                        .disabled(due == 0)
+                        Button(action: onLearn) {
+                            Label("Learn New", systemImage: "sparkles")
+                                .font(.headline)
+                                .lineLimit(1)
+                        }
+                        .buttonStyle(.glass)
+                        .disabled(newRemaining == 0)
                     }
-                    .buttonStyle(.glassProminent)
-                    .disabled(due == 0)
-                    Button(action: onLearn) {
-                        Label("Learn New", systemImage: "sparkles")
-                            .font(.headline)
-                            .lineLimit(1)
-                    }
-                    .buttonStyle(.glass)
-                    .disabled(newRemaining == 0)
                 }
                 .labelStyle(.titleAndIcon)
                 .controlSize(.large)

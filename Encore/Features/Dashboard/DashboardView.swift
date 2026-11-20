@@ -13,14 +13,27 @@ struct DashboardView: View {
 
     var body: some View {
         let overview = StudyOverview(courses: courses, exams: exams)
+        let activePlan = DailyPlanStore.shared.activePlan()
+        let dueCount = overview.courses.reduce(0) { $0 + $1.due }
+        let isPlanDone = activePlan != nil && dueCount == 0 && reviewedToday > 0
         NavigationStack {
             Form {
                 TodaySection(
-                    due: overview.courses.reduce(0) { $0 + $1.due },
+                    due: dueCount,
                     newRemaining: newRemaining,
                     reviewedToday: reviewedToday,
+                    plan: activePlan,
+                    isPlanDone: isPlanDone,
                     onReview: { navigation.startSession(SessionConfig(mode: .review)) },
-                    onLearn: { navigation.startSession(SessionConfig(mode: .learnNew)) }
+                    onLearn: { navigation.startSession(SessionConfig(mode: .learnNew)) },
+                    onStartPlan: {
+                        if let activePlan {
+                            navigation.startDailyPlan(activePlan)
+                        }
+                    },
+                    onKeepPracticing: {
+                        navigation.startSession(SessionConfig(mode: .practice))
+                    }
                 )
                 if !overview.exams.isEmpty {
                     Section("Upcoming exams") {

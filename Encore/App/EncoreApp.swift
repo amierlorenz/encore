@@ -27,6 +27,9 @@ struct EncoreApp: App {
                     if DebugLaunchOptions.usesLocalStore { return }
                     #endif
                     settingsSync.start()
+                    #if os(macOS)
+                    DailyPlanStore.shared.loadFromHandoffFolder()
+                    #endif
                 }
         }
         .modelContainer(container)

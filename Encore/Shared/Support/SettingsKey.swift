@@ -5,4 +5,7 @@ enum SettingsKey {
     static let blursChoices = "blursChoices"
     static let aiModel = "aiModel"
     static let pythonPath = "pythonPath"
+    static let dailyPlanData = "dailyPlanData"
+    static let planIdSeen = "planIdSeen"
+    static let planCreatedAt = "planCreatedAt"
 }

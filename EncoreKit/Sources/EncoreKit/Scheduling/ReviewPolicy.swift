@@ -11,10 +11,17 @@ import Foundation
 public struct ReviewPolicy: Sendable {
     public var scheduler: any Scheduler
     public var calendar: Calendar
+    /// Course interval caps (courseID -> max days), e.g. 30 days while a course is active.
+    public var intervalCaps: [String: Int]
 
-    public init(scheduler: any Scheduler = SM2Scheduler(), calendar: Calendar = .current) {
+    public init(
+        scheduler: any Scheduler = SM2Scheduler(),
+        calendar: Calendar = .current,
+        intervalCaps: [String: Int] = [:]
+    ) {
         self.scheduler = scheduler
         self.calendar = calendar
+        self.intervalCaps = intervalCaps
     }
 
     public struct Context: Sendable {
@@ -23,13 +30,25 @@ public struct ReviewPolicy: Sendable {
         public var wasDue: Bool
         /// Dates of exams covering the concept; past dates are ignored.
         public var examDates: [Date]
+        public var courseID: String?
+        public var intervalCap: Double?
         public var now: Date
 
-        public init(mode: StudyMode, isNew: Bool, wasDue: Bool, examDates: [Date] = [], now: Date) {
+        public init(
+            mode: StudyMode,
+            isNew: Bool,
+            wasDue: Bool,
+            examDates: [Date] = [],
+            courseID: String? = nil,
+            intervalCap: Double? = nil,
+            now: Date
+        ) {
             self.mode = mode
             self.isNew = isNew
             self.wasDue = wasDue
             self.examDates = examDates
+            self.courseID = courseID
+            self.intervalCap = intervalCap
             self.now = now
         }
     }
@@ -39,22 +58,33 @@ public struct ReviewPolicy: Sendable {
             return state
         }
         let next = scheduler.schedule(state, grade: grade, now: context.now, calendar: calendar)
-        return capped(next, examDates: context.examDates, now: context.now)
+        let effectiveCap = context.courseID.flatMap { intervalCaps[$0] }.map(Double.init) ?? context.intervalCap
+        return capped(next, examDates: context.examDates, intervalCap: effectiveCap, now: context.now)
     }
 
-    func capped(_ state: ScheduleState, examDates: [Date], now: Date) -> ScheduleState {
+    func capped(_ state: ScheduleState, examDates: [Date], intervalCap: Double? = nil, now: Date) -> ScheduleState {
         let today = calendar.startOfDay(for: now)
+        var capped = state
+
+        // Exam cap: interval is at most half the days remaining
         let daysLeft = examDates
             .compactMap { calendar.dateComponents([.day], from: today, to: calendar.startOfDay(for: $0)).day }
             .filter { $0 > 0 }
             .min()
-        guard let daysLeft else { return state }
+        if let daysLeft {
+            let examCap = max(1, Double(daysLeft / 2))
+            if capped.intervalDays > examCap {
+                capped.intervalDays = examCap
+                capped.dueDate = calendar.date(byAdding: .day, value: Int(examCap), to: today)
+            }
+        }
 
-        let cap = max(1, Double(daysLeft / 2))
-        guard state.intervalDays > cap else { return state }
-        var capped = state
-        capped.intervalDays = cap
-        capped.dueDate = calendar.date(byAdding: .day, value: Int(cap), to: today)
+        // Course interval cap: e.g. 30 days while a course is active
+        if let intervalCap, capped.intervalDays > intervalCap {
+            capped.intervalDays = intervalCap
+            capped.dueDate = calendar.date(byAdding: .day, value: Int(intervalCap), to: today)
+        }
+
         return capped
     }
 }

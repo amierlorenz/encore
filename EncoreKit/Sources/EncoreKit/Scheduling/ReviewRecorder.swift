@@ -27,11 +27,12 @@ public struct ReviewRecorder {
         let isNew = concept.isNew
         let wasDue = concept.isDue(at: now)
         let examDates = try upcomingExams(after: now).filter { $0.covers(concept) }.map(\.date)
+        let courseID = concept.unit?.course?.externalID
 
         concept.scheduleState = policy.next(
             concept.scheduleState,
             grade: grade,
-            context: .init(mode: mode, isNew: isNew, wasDue: wasDue, examDates: examDates, now: now)
+            context: .init(mode: mode, isNew: isNew, wasDue: wasDue, examDates: examDates, courseID: courseID, now: now)
         )
         if isNew {
             concept.introducedAt = now

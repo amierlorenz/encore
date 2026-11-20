@@ -22,12 +22,37 @@ struct StudyView: View {
             }
         }
         .onChange(of: navigation.pendingSession, initial: true, startPending)
+        .onChange(of: navigation.pendingDailyPlan, initial: false, startPending)
     }
 
     private func startPending() {
+        if let plan = navigation.pendingDailyPlan {
+            let chunk = navigation.pendingChunkIndex
+            navigation.pendingDailyPlan = nil
+            navigation.pendingChunkIndex = nil
+            startPlan(plan, chunkIndex: chunk)
+            return
+        }
         guard let config = navigation.pendingSession else { return }
         navigation.pendingSession = nil
         start(config)
+    }
+
+    private func startPlan(_ plan: DailyPlan, chunkIndex: Int?) {
+        if let engine { undoManager?.removeAllActions(withTarget: engine) }
+        do {
+            let engine = try SessionEngine(
+                plan: plan,
+                chunkIndex: chunkIndex,
+                context: modelContext,
+                supportsCodeExecution: Platform.supportsCodeExecution
+            )
+            message = engine.isFinished ? "Today's plan has no remaining items." : nil
+            self.engine = engine
+        } catch {
+            Logger.app.error("Starting plan session failed: \(error)")
+            message = "Couldn't start the plan session."
+        }
     }
 
     private func start(_ config: SessionConfig) {

@@ -1,0 +1,40 @@
+{
+  "header": {
+    "schema": "encore.plan",
+    "version": 1,
+    "id": "plan-01JD0000000000000000000002",
+    "created_at": "2026-11-20T02:00:00Z",
+    "producer": "articulate 0.1.0"
+  },
+  "kind": "daily",
+  "date": "2026-11-20",
+  "validUntil": "2026-11-21T02:00:00-05:00",
+  "reviewScope": ["csc301"],
+  "new": [
+    {
+      "conceptId": "csc301.process",
+      "promptIds": [],
+      "reason": "core"
+    }
+  ],
+  "examFocus": [
+    {
+      "examId": "csc301.x.midterm",
+      "rampDay": 15
+    }
+  ],
+  "budgetMinutes": {
+    "target": 20,
+    "planned": 20
+  },
+  "kindsMix": {
+    "freeRecallMin": 0.5
+  },
+  "readingShare": 0.1,
+  "intervalCaps": [
+    {
+      "courseId": "csc301",
+      "maxDays": 30
+    }
+  ]
+}

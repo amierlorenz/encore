@@ -1,4 +1,4 @@
-# MieracleStudy
+# Encore
 
 A personal study app for macOS and iPhone built on the research in *Make It Stick* (Brown, Roediger, McDaniel). It combines spaced-repetition flashcards, varied quizzes, and a graded coding environment for interview prep, with content synced through iCloud.
 
@@ -30,7 +30,7 @@ git clone https://github.com/amierlorenz/encore.git
 cd encore
 brew install gitleaks
 git config core.hooksPath .githooks
-open MieracleStudy.xcodeproj
+open Encore.xcodeproj
 ```
 
 Set your team under *Signing & Capabilities*. The app uses the CloudKit container `iCloud.com.amierlorenz.Encore`.
@@ -38,16 +38,16 @@ Set your team under *Signing & Capabilities*. The app uses the CloudKit containe
 Run the package tests with the build directory outside iCloud-synced folders (codesigning rejects the metadata iCloud adds):
 
 ```sh
-cd MieracleKit
-swift test --scratch-path ~/Library/Caches/MieracleKit-build
+cd EncoreKit
+swift test --scratch-path ~/Library/Caches/EncoreKit-build
 ```
 
 ## Project layout
 
 | Path | Contents |
 |---|---|
-| `MieracleStudy/` | SwiftUI app target: screens and app wiring |
-| `MieracleKit/` | Local Swift package: models, scheduling, sessions, import, AI, coding, Canvas, rendering |
+| `Encore/` | SwiftUI app target: screens and app wiring |
+| `EncoreKit/` | Local Swift package: models, scheduling, sessions, import, AI, coding, Canvas, rendering |
 | `Schema/` | JSON Schema for import files |
 | `.claude/skills/study-import/` | Claude Code skill that turns slides and docs into import JSON |
 | `docs/ARCHITECTURE.md` | How the pieces fit together |

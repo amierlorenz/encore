@@ -19,6 +19,8 @@ public final class ReviewLog {
     public var attemptID: UUID = UUID()
     public var answerText: String = ""
     public var sessionKindRaw: String = "practice"
+    /// The Articulate plan the answer was given in, if any.
+    public var planID: String?
     public var calibrated: Bool = true
     public var exportedAt: Date?
 
@@ -37,6 +39,7 @@ public final class ReviewLog {
         attemptID: UUID = UUID(),
         answerText: String = "",
         sessionKind: String = "practice",
+        planID: String? = nil,
         calibrated: Bool = true,
         exportedAt: Date? = nil
     ) {
@@ -51,6 +54,7 @@ public final class ReviewLog {
         self.attemptID = attemptID
         self.answerText = answerText
         self.sessionKindRaw = sessionKind
+        self.planID = planID
         self.calibrated = calibrated
         self.exportedAt = exportedAt
     }

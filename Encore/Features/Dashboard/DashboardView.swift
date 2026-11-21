@@ -6,6 +6,7 @@ struct DashboardView: View {
     @Environment(AppNavigation.self) private var navigation
     @Environment(\.modelContext) private var modelContext
     @AppStorage(SettingsKey.dailyNewLimit) private var dailyNewLimit = NewConceptBudget.defaultLimit
+    @AppStorage(SettingsKey.planCreatedAt) private var planCreatedAtTimestamp: Double = 0
     @Query(sort: \Course.name) private var courses: [Course]
     @Query(sort: \Exam.date) private var exams: [Exam]
     @Query private var reviews: [ReviewLog]
@@ -14,6 +15,7 @@ struct DashboardView: View {
     var body: some View {
         let overview = StudyOverview(courses: courses, exams: exams)
         let activePlan = DailyPlanStore.shared.activePlan()
+        let staleMessage = DailyPlanStore.shared.staleBannerMessage()
         let dueCount = overview.courses.reduce(0) { $0 + $1.due }
         let isPlanDone = activePlan != nil && dueCount == 0 && reviewedToday > 0
         NavigationStack {
@@ -24,6 +26,7 @@ struct DashboardView: View {
                     reviewedToday: reviewedToday,
                     plan: activePlan,
                     isPlanDone: isPlanDone,
+                    staleMessage: staleMessage,
                     onReview: { navigation.startSession(SessionConfig(mode: .review)) },
                     onLearn: { navigation.startSession(SessionConfig(mode: .learnNew)) },
                     onStartPlan: {
@@ -33,6 +36,16 @@ struct DashboardView: View {
                     },
                     onKeepPracticing: {
                         navigation.startSession(SessionConfig(mode: .practice))
+                    },
+                    onStartPracticeTest: {
+                        if let activePlan {
+                            navigation.startDailyPlan(activePlan, part: .practiceTest)
+                        }
+                    },
+                    onStartReviewQuiz: {
+                        if let activePlan {
+                            navigation.startDailyPlan(activePlan, part: .reviewQuiz)
+                        }
                     }
                 )
                 if !overview.exams.isEmpty {

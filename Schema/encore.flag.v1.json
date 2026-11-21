@@ -1,0 +1,106 @@
+{
+  "$defs": {
+    "Header": {
+      "properties": {
+        "schema": {
+          "enum": [
+            "encore.import",
+            "encore.plan",
+            "encore.state",
+            "encore.library",
+            "encore.attempt",
+            "encore.flag"
+          ],
+          "title": "Schema",
+          "type": "string"
+        },
+        "version": {
+          "title": "Version",
+          "type": "integer"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "producer": {
+          "title": "Producer",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema",
+        "version",
+        "id",
+        "created_at",
+        "producer"
+      ],
+      "title": "Header",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "header": {
+      "$ref": "#/$defs/Header"
+    },
+    "flagId": {
+      "format": "uuid",
+      "title": "Flagid",
+      "type": "string"
+    },
+    "promptId": {
+      "title": "Promptid",
+      "type": "string"
+    },
+    "conceptId": {
+      "title": "Conceptid",
+      "type": "string"
+    },
+    "reason": {
+      "enum": [
+        "wrong",
+        "unclear",
+        "duplicate",
+        "other"
+      ],
+      "title": "Reason",
+      "type": "string"
+    },
+    "note": {
+      "default": "",
+      "title": "Note",
+      "type": "string"
+    },
+    "suggestedFix": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Suggestedfix"
+    },
+    "flaggedAt": {
+      "format": "date-time",
+      "title": "Flaggedat",
+      "type": "string"
+    }
+  },
+  "required": [
+    "header",
+    "flagId",
+    "promptId",
+    "conceptId",
+    "reason",
+    "flaggedAt"
+  ],
+  "title": "Flag",
+  "type": "object"
+}

@@ -27,7 +27,7 @@ struct PromptCardView: View {
                 } header: {
                     Text(prompt.kind.displayName)
                 } footer: {
-                    FlagPromptButton(prompt: prompt)
+                    FlagPromptButton(prompt: prompt, concept: concept)
                 }
                 AnswerArea(
                     content: content,

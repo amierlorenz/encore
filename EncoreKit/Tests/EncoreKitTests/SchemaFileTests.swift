@@ -83,4 +83,25 @@ struct SchemaFileTests {
         #expect(required.contains("sessionKind"))
         #expect(required.contains("calibrated"))
     }
+
+    @Test func flagSchemaIsValid() throws {
+        let url = URL(filePath: #filePath)
+            .deletingLastPathComponent()
+            .appending(path: "../../../Schema/encore.flag.v1.json")
+            .standardizedFileURL
+        let data = try Data(contentsOf: url)
+        let schema = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+        #expect(schema["title"] as? String == "Flag")
+
+        let defs = try #require(schema["$defs"] as? [String: Any])
+        #expect(defs["Header"] != nil)
+
+        let required = try #require(schema["required"] as? [String])
+        #expect(required.contains("header"))
+        #expect(required.contains("flagId"))
+        #expect(required.contains("promptId"))
+        #expect(required.contains("conceptId"))
+        #expect(required.contains("reason"))
+        #expect(required.contains("flaggedAt"))
+    }
 }

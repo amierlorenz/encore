@@ -14,6 +14,10 @@ public struct ConceptSnapshot: Hashable, Sendable {
     public var lapses: Int
     public var createdAt: Date
     public var status: String
+    /// "core", "standard" or "background".
+    public var tier: String
+    /// External ids of the exams that cover the concept, through its unit or tags.
+    public var examIDs: Set<String>
     public var prompts: [PromptSnapshot]
 
     public var isRetired: Bool { status == "retired" }
@@ -30,6 +34,8 @@ public struct ConceptSnapshot: Hashable, Sendable {
         lapses: Int = 0,
         createdAt: Date = .distantPast,
         status: String = "active",
+        tier: String = "standard",
+        examIDs: Set<String> = [],
         prompts: [PromptSnapshot]
     ) {
         self.id = id
@@ -43,6 +49,8 @@ public struct ConceptSnapshot: Hashable, Sendable {
         self.lapses = lapses
         self.createdAt = createdAt
         self.status = status
+        self.tier = tier
+        self.examIDs = examIDs
         self.prompts = prompts
     }
 
@@ -59,8 +67,16 @@ public struct ConceptSnapshot: Hashable, Sendable {
             lapses: concept.lapses,
             createdAt: concept.createdAt,
             status: concept.status,
+            tier: concept.tier,
+            examIDs: Self.examIDs(of: concept),
             prompts: (concept.prompts ?? []).map(PromptSnapshot.init)
         )
+    }
+
+    private static func examIDs(of concept: Concept) -> Set<String> {
+        let unitExams = concept.unit?.exams ?? []
+        let tagExams = (concept.tags ?? []).flatMap { $0.exams ?? [] }
+        return Set((unitExams + tagExams).map(\.externalID))
     }
 }
 

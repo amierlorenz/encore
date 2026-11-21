@@ -15,6 +15,18 @@ public struct DailyPlan: Codable, Hashable, Sendable {
     public var intervalCaps: [IntervalCap]
     public var importBatch: String?
     public var macPractice: [String]
+    /// Phase 3: a practice test to offer today.
+    public var practiceTest: PracticeTest?
+    /// Phase 3: the day before an exam, a short quiz on exactly these concepts.
+    public var reviewQuiz: ReviewQuiz?
+    /// Phase 3: serve at most this many due reviews today.
+    public var reviewLimit: Int?
+    /// Phase 3: due reviews of these exams' concepts come first.
+    public var reviewPriority: [String]
+    /// Phase 3: introduce no new concepts today.
+    public var newPaused: Bool
+    /// Phase 3: introduce no new concepts that belong to these exams.
+    public var holdNewForExams: [String]
 
     public init(
         header: PlanHeader,
@@ -29,7 +41,13 @@ public struct DailyPlan: Codable, Hashable, Sendable {
         readingShare: Double = 0.0,
         intervalCaps: [IntervalCap] = [],
         importBatch: String? = nil,
-        macPractice: [String] = []
+        macPractice: [String] = [],
+        practiceTest: PracticeTest? = nil,
+        reviewQuiz: ReviewQuiz? = nil,
+        reviewLimit: Int? = nil,
+        reviewPriority: [String] = [],
+        newPaused: Bool = false,
+        holdNewForExams: [String] = []
     ) {
         self.header = header
         self.kind = kind
@@ -44,6 +62,12 @@ public struct DailyPlan: Codable, Hashable, Sendable {
         self.intervalCaps = intervalCaps
         self.importBatch = importBatch
         self.macPractice = macPractice
+        self.practiceTest = practiceTest
+        self.reviewQuiz = reviewQuiz
+        self.reviewLimit = reviewLimit
+        self.reviewPriority = reviewPriority
+        self.newPaused = newPaused
+        self.holdNewForExams = holdNewForExams
     }
 
     enum CodingKeys: String, CodingKey {
@@ -60,6 +84,12 @@ public struct DailyPlan: Codable, Hashable, Sendable {
         case intervalCaps
         case importBatch
         case macPractice
+        case practiceTest
+        case reviewQuiz
+        case reviewLimit
+        case reviewPriority
+        case newPaused
+        case holdNewForExams
     }
 
     public init(from decoder: any Decoder) throws {
@@ -83,6 +113,12 @@ public struct DailyPlan: Codable, Hashable, Sendable {
         intervalCaps = try c.decodeIfPresent([IntervalCap].self, forKey: .intervalCaps) ?? []
         importBatch = try c.decodeIfPresent(String.self, forKey: .importBatch)
         macPractice = try c.decodeIfPresent([String].self, forKey: .macPractice) ?? []
+        practiceTest = try c.decodeIfPresent(PracticeTest.self, forKey: .practiceTest)
+        reviewQuiz = try c.decodeIfPresent(ReviewQuiz.self, forKey: .reviewQuiz)
+        reviewLimit = try c.decodeIfPresent(Int.self, forKey: .reviewLimit)
+        reviewPriority = try c.decodeIfPresent([String].self, forKey: .reviewPriority) ?? []
+        newPaused = try c.decodeIfPresent(Bool.self, forKey: .newPaused) ?? false
+        holdNewForExams = try c.decodeIfPresent([String].self, forKey: .holdNewForExams) ?? []
     }
 
     public func encode(to encoder: any Encoder) throws {
@@ -102,6 +138,12 @@ public struct DailyPlan: Codable, Hashable, Sendable {
         try c.encode(intervalCaps, forKey: .intervalCaps)
         try c.encodeIfPresent(importBatch, forKey: .importBatch)
         try c.encode(macPractice, forKey: .macPractice)
+        try c.encodeIfPresent(practiceTest, forKey: .practiceTest)
+        try c.encodeIfPresent(reviewQuiz, forKey: .reviewQuiz)
+        try c.encodeIfPresent(reviewLimit, forKey: .reviewLimit)
+        try c.encode(reviewPriority, forKey: .reviewPriority)
+        try c.encode(newPaused, forKey: .newPaused)
+        try c.encode(holdNewForExams, forKey: .holdNewForExams)
     }
 
     /// Whether this plan has expired (now >= validUntil). Missed plans expire and are ignored.
@@ -291,5 +333,42 @@ public struct IntervalCap: Codable, Hashable, Sendable {
     enum CodingKeys: String, CodingKey {
         case courseId
         case maxDays
+    }
+}
+
+public struct PracticeTest: Codable, Hashable, Sendable {
+    public var examId: String
+    /// How many items to draw from the exam's scope (15–20).
+    public var itemCount: Int
+    /// The smallest share of free-recall items.
+    public var freeRecallMin: Double
+
+    public init(examId: String, itemCount: Int, freeRecallMin: Double = 0.5) {
+        self.examId = examId
+        self.itemCount = itemCount
+        self.freeRecallMin = freeRecallMin
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case examId
+        case itemCount
+        case freeRecallMin
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        examId = try c.decode(String.self, forKey: .examId)
+        itemCount = try c.decode(Int.self, forKey: .itemCount)
+        freeRecallMin = try c.decodeIfPresent(Double.self, forKey: .freeRecallMin) ?? 0.5
+    }
+}
+
+public struct ReviewQuiz: Codable, Hashable, Sendable {
+    public var examId: String
+    public var conceptIds: [String]
+
+    public init(examId: String, conceptIds: [String]) {
+        self.examId = examId
+        self.conceptIds = conceptIds
     }
 }

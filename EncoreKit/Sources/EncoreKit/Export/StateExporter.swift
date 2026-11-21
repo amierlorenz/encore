@@ -349,17 +349,25 @@ public struct StateExporter {
         return destinationURL
     }
 
-    /// Runs both state and attempts exports.
+    /// Exports library.json snapshot.
     @discardableResult
-    public func exportAll(now: Date = .now) throws -> (stateURL: URL, attemptsURL: URL?) {
+    public func exportLibrary(now: Date = .now) throws -> URL {
+        let exporter = LibraryExporter(context: context, handoffFolder: handoffFolder)
+        return try exporter.exportLibrary(now: now)
+    }
+
+    /// Runs state, attempts, and library exports.
+    @discardableResult
+    public func exportAll(now: Date = .now) throws -> (stateURL: URL, attemptsURL: URL?, libraryURL: URL) {
         let stateURL = try exportState(now: now)
         let attemptsURL = try exportAttempts(now: now)
-        return (stateURL, attemptsURL)
+        let libraryURL = try exportLibrary(now: now)
+        return (stateURL, attemptsURL, libraryURL)
     }
 
     /// Convenience for launch export.
     @discardableResult
-    public static func exportOnLaunch(context: ModelContext, folder: HandoffFolder = HandoffFolder(), now: Date = .now) -> (stateURL: URL, attemptsURL: URL?)? {
+    public static func exportOnLaunch(context: ModelContext, folder: HandoffFolder = HandoffFolder(), now: Date = .now) -> (stateURL: URL, attemptsURL: URL?, libraryURL: URL)? {
         do {
             let exporter = StateExporter(context: context, handoffFolder: folder)
             return try exporter.exportAll(now: now)

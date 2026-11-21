@@ -130,13 +130,17 @@ public final class SessionEngine {
         let snapshots = allConcepts.map(ConceptSnapshot.init)
         let builder = DailyPlanSessionBuilder(plan: plan, supportsCodeExecution: supportsCodeExecution)
         let queue: [SessionItem]
-        switch part {
-        case .practiceTest:
-            queue = builder.buildPracticeTest(from: snapshots, now: now, using: &rng)
-        case .reviewQuiz:
-            queue = builder.buildReviewQuiz(from: snapshots, now: now)
-        case .session:
-            queue = Self.sessionQueue(builder.build(from: snapshots, now: now, using: &rng), chunkIndex: chunkIndex)
+        if plan.kind == "postclass" {
+            queue = try PostclassQuiz.items(for: plan, in: context, supportsCodeExecution: supportsCodeExecution)
+        } else {
+            switch part {
+            case .practiceTest:
+                queue = builder.buildPracticeTest(from: snapshots, now: now, using: &rng)
+            case .reviewQuiz:
+                queue = builder.buildReviewQuiz(from: snapshots, now: now)
+            case .session:
+                queue = Self.sessionQueue(builder.build(from: snapshots, now: now, using: &rng), chunkIndex: chunkIndex)
+            }
         }
 
         let intervalCapsMap = Dictionary(plan.intervalCaps.map { ($0.courseId, $0.maxDays) }, uniquingKeysWith: { first, _ in first })
@@ -248,6 +252,9 @@ public final class SessionEngine {
         isFinished = true
         record.endedAt = now
         try context.save()
+        if sessionKind == PostclassQuiz.sessionKind {
+            PostclassInbox.cleanupAnswered(in: context)
+        }
         NotificationCenter.default.post(name: .studySessionDidFinish, object: sessionID)
         StateExportCoordinator.shared.schedulePostSessionExport(context: context)
     }

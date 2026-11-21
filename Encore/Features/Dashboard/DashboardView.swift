@@ -48,6 +48,31 @@ struct DashboardView: View {
                         }
                     }
                 )
+                let pendingQuizzes = PostclassPlanStore.shared.pending(in: modelContext, supportsCodeExecution: Platform.supportsCodeExecution)
+                if !pendingQuizzes.isEmpty {
+                    Section("Post-class quiz") {
+                        ForEach(pendingQuizzes) { quiz in
+                            let course = courses.first { $0.externalID == quiz.courseID }
+                            let courseName = course?.shortName ?? course?.name ?? quiz.courseID.uppercased()
+                            let count = quiz.plan.new.count
+                            Button(action: { navigation.startPostclassQuiz(quiz.plan) }) {
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(courseName)
+                                            .font(.headline)
+                                        Text("\(count) \(count == 1 ? "question" : "questions") from today's class")
+                                            .font(.subheadline)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    Spacer()
+                                    Label("Start", systemImage: "sparkles")
+                                        .font(.subheadline.bold())
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
                 if !overview.exams.isEmpty {
                     Section("Upcoming exams") {
                         ForEach(overview.exams) { exam in

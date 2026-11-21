@@ -8,4 +8,5 @@ enum SettingsKey {
     static let dailyPlanData = "dailyPlanData"
     static let planIdSeen = "planIdSeen"
     static let planCreatedAt = "planCreatedAt"
+    static let postclassPlansData = "postclassPlansData"
 }

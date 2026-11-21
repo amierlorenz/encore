@@ -5,6 +5,9 @@ import Foundation
 /// - **Practice mode:** passing a concept that isn't due leaves its schedule
 ///   alone, because early success mostly reflects short-term memory. Failing it
 ///   still reschedules, pulling the due date in.
+/// - **Post-class quiz:** a concept introduced in one is first due at least a
+///   day later; re-asking an introduced, not-due concept in the quiz leaves its
+///   schedule alone; and its first review after that leaves ease alone.
 /// - **Exam cap:** for concepts on an upcoming exam, the interval is at most
 ///   half the days remaining, so each concept comes up at least twice in the
 ///   final week and never after the exam.
@@ -32,6 +35,7 @@ public struct ReviewPolicy: Sendable {
         public var examDates: [Date]
         public var courseID: String?
         public var intervalCap: Double?
+        public var postclass: PostclassStep?
         public var now: Date
 
         public init(
@@ -41,6 +45,7 @@ public struct ReviewPolicy: Sendable {
             examDates: [Date] = [],
             courseID: String? = nil,
             intervalCap: Double? = nil,
+            postclass: PostclassStep? = nil,
             now: Date
         ) {
             self.mode = mode
@@ -49,17 +54,40 @@ public struct ReviewPolicy: Sendable {
             self.examDates = examDates
             self.courseID = courseID
             self.intervalCap = intervalCap
+            self.postclass = postclass
             self.now = now
         }
+    }
+
+    /// Where an answer sits relative to a post-class quiz.
+    public enum PostclassStep: Sendable {
+        /// Answered in the post-class quiz itself.
+        case quiz
+        /// The first scheduled review of a concept the quiz introduced.
+        case firstReview
     }
 
     public func next(_ state: ScheduleState, grade: Grade, context: Context) -> ScheduleState {
         if context.mode == .practice, !context.isNew, !context.wasDue, grade.isPass {
             return state
         }
-        let next = scheduler.schedule(state, grade: grade, now: context.now, calendar: calendar)
+        if context.postclass == .quiz, !context.isNew, !context.wasDue {
+            return state
+        }
+        var next = scheduler.schedule(state, grade: grade, now: context.now, calendar: calendar)
+        if context.postclass == .firstReview {
+            next.ease = state.ease
+        }
         let effectiveCap = context.courseID.flatMap { intervalCaps[$0] }.map(Double.init) ?? context.intervalCap
-        return capped(next, examDates: context.examDates, intervalCap: effectiveCap, now: context.now)
+        next = capped(next, examDates: context.examDates, intervalCap: effectiveCap, now: context.now)
+        if context.postclass == .quiz, context.isNew {
+            let tomorrow = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: context.now))!
+            if (next.dueDate ?? .distantPast) < tomorrow {
+                next.dueDate = tomorrow
+                next.intervalDays = max(1, next.intervalDays)
+            }
+        }
+        return next
     }
 
     func capped(_ state: ScheduleState, examDates: [Date], intervalCap: Double? = nil, now: Date) -> ScheduleState {

@@ -34,9 +34,11 @@ struct StudyView: View {
         }
         if let plan = navigation.pendingDailyPlan {
             let chunk = navigation.pendingChunkIndex
+            let part = navigation.pendingDailyPlanPart
             navigation.pendingDailyPlan = nil
             navigation.pendingChunkIndex = nil
-            startPlan(plan, chunkIndex: chunk)
+            navigation.pendingDailyPlanPart = .session
+            startPlan(plan, part: part, chunkIndex: chunk)
             return
         }
         guard let config = navigation.pendingSession else { return }
@@ -44,11 +46,12 @@ struct StudyView: View {
         start(config)
     }
 
-    private func startPlan(_ plan: DailyPlan, chunkIndex: Int?) {
+    private func startPlan(_ plan: DailyPlan, part: DailyPlanPart = .session, chunkIndex: Int?) {
         if let engine { undoManager?.removeAllActions(withTarget: engine) }
         do {
             let engine = try SessionEngine(
                 plan: plan,
+                part: part,
                 chunkIndex: chunkIndex,
                 context: modelContext,
                 supportsCodeExecution: Platform.supportsCodeExecution

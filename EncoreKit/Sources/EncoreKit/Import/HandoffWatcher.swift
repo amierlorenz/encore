@@ -176,6 +176,10 @@ public final class HandoffWatcher {
             }
         }
 
+        if !result.importedFiles.isEmpty {
+            _ = StateExporter.exportOnLaunch(context: context, folder: handoffFolder)
+        }
+
         // 2. Hand `plan.json` and `postclass-*.json` to planHandler in name order
         let planURLs = validURLs
             .filter {

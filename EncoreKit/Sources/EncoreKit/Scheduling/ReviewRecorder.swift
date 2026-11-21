@@ -22,6 +22,7 @@ public struct ReviewRecorder {
         attemptID: UUID = UUID(),
         answerText: String = "",
         sessionKind: String = "practice",
+        planID: String? = nil,
         calibrated: Bool = true,
         now: Date = .now
     ) throws -> ReviewLog {
@@ -65,6 +66,7 @@ public struct ReviewRecorder {
             attemptID: attemptID,
             answerText: answerText,
             sessionKind: sessionKind,
+            planID: planID,
             calibrated: calibrated && postclass != .firstReview
         )
         context.insert(log)

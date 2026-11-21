@@ -14,6 +14,8 @@ public final class SessionEngine {
     public let config: SessionConfig
     public let startedAt: Date
     public let sessionKind: String
+    /// The id of the Articulate plan the session serves, carried on its attempts.
+    public let planID: String?
     public private(set) var queue: [SessionItem]
     public private(set) var position = 0
     public private(set) var summary = SessionSummary()
@@ -70,6 +72,7 @@ public final class SessionEngine {
         self.context = context
         self.startedAt = now
         self.sessionKind = "practice"
+        self.planID = nil
         self.builder = builder
         self.recorder = ReviewRecorder(context: context, policy: policy)
         self.concepts = Dictionary(allConcepts.map { ($0.externalID, $0) }, uniquingKeysWith: { first, _ in first })
@@ -89,6 +92,7 @@ public final class SessionEngine {
         supportsCodeExecution: Bool,
         policy: ReviewPolicy = ReviewPolicy(),
         sessionKind: String = "practice",
+        planID: String? = nil,
         now: Date = .now
     ) throws {
         let allConcepts = try context.fetch(FetchDescriptor<Concept>())
@@ -98,6 +102,7 @@ public final class SessionEngine {
         self.context = context
         self.startedAt = now
         self.sessionKind = sessionKind
+        self.planID = planID
         self.builder = builder
         self.recorder = ReviewRecorder(context: context, policy: policy)
         self.concepts = Dictionary(allConcepts.map { ($0.externalID, $0) }, uniquingKeysWith: { first, _ in first })
@@ -109,9 +114,11 @@ public final class SessionEngine {
         isFinished = queue.isEmpty
     }
 
-    /// Starts a session from a DailyPlan, optionally taking a specific ~5-minute chunk.
+    /// Starts a session from a DailyPlan: today's session (optionally one ~5-minute chunk of it), or the
+    /// plan's practice test or review quiz.
     public convenience init(
         plan: DailyPlan,
+        part: DailyPlanPart = .session,
         chunkIndex: Int? = nil,
         context: ModelContext,
         supportsCodeExecution: Bool,
@@ -121,27 +128,27 @@ public final class SessionEngine {
         var rng = SystemRandomNumberGenerator()
         let allConcepts = try context.fetch(FetchDescriptor<Concept>())
         let snapshots = allConcepts.map(ConceptSnapshot.init)
-        let fullQueue: [SessionItem]
-        if plan.kind == "postclass" {
-            fullQueue = try PostclassQuiz.items(for: plan, in: context, supportsCodeExecution: supportsCodeExecution)
-        } else {
-            let builder = DailyPlanSessionBuilder(plan: plan, supportsCodeExecution: supportsCodeExecution)
-            fullQueue = builder.build(from: snapshots, now: now, using: &rng)
-        }
-
+        let builder = DailyPlanSessionBuilder(plan: plan, supportsCodeExecution: supportsCodeExecution)
         let queue: [SessionItem]
-        if let chunkIndex {
-            let chunks = DailyPlanSessionBuilder.chunkQueue(fullQueue)
-            queue = chunks[safe: chunkIndex] ?? []
+        if plan.kind == "postclass" {
+            queue = try PostclassQuiz.items(for: plan, in: context, supportsCodeExecution: supportsCodeExecution)
         } else {
-            queue = fullQueue
+            switch part {
+            case .practiceTest:
+                queue = builder.buildPracticeTest(from: snapshots, now: now, using: &rng)
+            case .reviewQuiz:
+                queue = builder.buildReviewQuiz(from: snapshots, now: now)
+            case .session:
+                queue = Self.sessionQueue(builder.build(from: snapshots, now: now, using: &rng), chunkIndex: chunkIndex)
+            }
         }
 
         let intervalCapsMap = Dictionary(plan.intervalCaps.map { ($0.courseId, $0.maxDays) }, uniquingKeysWith: { first, _ in first })
         let effectivePolicy = policy ?? ReviewPolicy(intervalCaps: intervalCapsMap)
         let config = SessionConfig(
             scope: .init(courseIDs: Set(plan.reviewScope)),
-            mode: .review,
+            // A test asks concepts that aren't due: passing one leaves its schedule alone.
+            mode: part == .session ? .review : .practice,
             length: .all,
             order: .interleaved
         )
@@ -152,8 +159,14 @@ public final class SessionEngine {
             supportsCodeExecution: supportsCodeExecution,
             policy: effectivePolicy,
             sessionKind: plan.kind == "postclass" ? "postclass" : "plan",
+            planID: plan.header.id,
             now: now
         )
+    }
+
+    private static func sessionQueue(_ fullQueue: [SessionItem], chunkIndex: Int?) -> [SessionItem] {
+        guard let chunkIndex else { return fullQueue }
+        return DailyPlanSessionBuilder.chunkQueue(fullQueue)[safe: chunkIndex] ?? []
     }
 
     public var currentItem: SessionItem? {
@@ -195,6 +208,7 @@ public final class SessionEngine {
             sessionID: sessionID,
             answerText: answerText,
             sessionKind: sessionKind,
+            planID: planID,
             calibrated: isCalibrated,
             now: now
         )

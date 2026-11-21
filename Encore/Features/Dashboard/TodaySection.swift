@@ -9,15 +9,28 @@ struct TodaySection: View {
     let reviewedToday: Int
     var plan: DailyPlan? = nil
     var isPlanDone: Bool = false
+    var staleMessage: String? = nil
     let onReview: () -> Void
     let onLearn: () -> Void
     var onStartPlan: (() -> Void)? = nil
     var onKeepPracticing: (() -> Void)? = nil
+    var onStartPracticeTest: (() -> Void)? = nil
+    var onStartReviewQuiz: (() -> Void)? = nil
+
+    private var planButtonTitle: String {
+        if let focus = plan?.examFocus.first {
+            return "Today's Session · Ramp Day \(focus.rampDay)"
+        }
+        return "Today's Session"
+    }
 
     var body: some View {
         Section {
         } header: {
             VStack(spacing: 18) {
+                if let staleMessage {
+                    StalePlanBanner(message: staleMessage)
+                }
                 SectionTitle(title: "Today")
                 HStack(spacing: 12) {
                     StatCard(value: due, title: "Due for review", systemImage: "arrow.counterclockwise", tint: due > 0 ? .orange : nil)
@@ -44,7 +57,7 @@ struct TodaySection: View {
                             .buttonStyle(.glassProminent)
                         } else {
                             Button(action: { onStartPlan?() }) {
-                                Label("Today's Session", systemImage: "play.circle.fill")
+                                Label(planButtonTitle, systemImage: "play.circle.fill")
                                     .font(.headline)
                                     .lineLimit(1)
                             }
@@ -69,6 +82,28 @@ struct TodaySection: View {
                 }
                 .labelStyle(.titleAndIcon)
                 .controlSize(.large)
+                if let plan, !plan.isExpired(), plan.isAvailable(), plan.practiceTest != nil || plan.reviewQuiz != nil {
+                    HStack(spacing: 12) {
+                        if plan.practiceTest != nil {
+                            Button(action: { onStartPracticeTest?() }) {
+                                Label("Practice Test", systemImage: "pencil.and.list.clipboard")
+                                    .font(.headline)
+                                    .lineLimit(1)
+                            }
+                            .buttonStyle(.glass)
+                        }
+                        if plan.reviewQuiz != nil {
+                            Button(action: { onStartReviewQuiz?() }) {
+                                Label("Review Quiz", systemImage: "checklist")
+                                    .font(.headline)
+                                    .lineLimit(1)
+                            }
+                            .buttonStyle(.glass)
+                        }
+                    }
+                    .labelStyle(.titleAndIcon)
+                    .controlSize(.regular)
+                }
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 8)

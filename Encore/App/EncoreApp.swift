@@ -36,6 +36,7 @@ struct EncoreApp: App {
                         handoffWatcher = watcher
                         watcher.start()
                     }
+                    StateExporter.exportOnLaunch(context: container.mainContext)
                     #endif
                 }
         }

@@ -9,7 +9,7 @@ struct PromptCardView: View {
     let showsConfidence: Bool
     let blursChoices: Bool
     let provider: any AIProvider
-    let onGrade: (Grade, Confidence?, TimeInterval) -> Void
+    let onGrade: (Grade, Confidence?, TimeInterval, String) -> Void
 
     @State private var input = AnswerInput()
     @State private var isRevealed = false
@@ -115,6 +115,7 @@ struct PromptCardView: View {
     }
 
     private func grade(_ grade: Grade) {
-        onGrade(grade, confidence, Date.now.timeIntervalSince(shownAt))
+        let answerText = prompt.content.map { input.textRepresentation(for: $0) } ?? input.text
+        onGrade(grade, confidence, Date.now.timeIntervalSince(shownAt), answerText)
     }
 }

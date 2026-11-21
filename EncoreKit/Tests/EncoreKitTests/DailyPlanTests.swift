@@ -132,6 +132,92 @@ struct DailyPlanTests {
         #expect(store.activePlan(at: expiredTime) == nil)
     }
 
+    @Test func stalePlanBannerDetectionAndFormatting() throws {
+        let suite = "test.plan.stale.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removeSuite(named: suite) }
+
+        let store = DailyPlanStore(defaults: defaults)
+
+        // 1. No plan has arrived yet -> no stale banner
+        #expect(!store.isPlanStale())
+        #expect(store.staleBannerMessage() == nil)
+
+        // 2. Plan arrives with created_at on Thursday at 02:00:00 UTC
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let enLocale = Locale(identifier: "en_US")
+
+        var comps = DateComponents()
+        comps.year = 2026
+        comps.month = 11
+        comps.day = 19
+        comps.hour = 2
+        comps.minute = 0
+        comps.second = 0
+        let createdAt = calendar.date(from: comps)!
+        let validUntil = calendar.date(byAdding: .hour, value: 24, to: createdAt)!
+
+        let plan = DailyPlan(
+            header: PlanHeader(id: "plan-test-stale", createdAt: createdAt),
+            date: "2026-11-19",
+            validUntil: validUntil,
+            reviewScope: ["mat305"],
+            new: []
+        )
+        store.applyPlan(plan, at: createdAt)
+
+        // 3. Within 30 hours (e.g. 29 hours later at Friday 07:00 UTC) -> not stale
+        let notStaleTime = calendar.date(byAdding: .hour, value: 29, to: createdAt)!
+        #expect(!store.isPlanStale(at: notStaleTime))
+        #expect(store.staleBannerMessage(at: notStaleTime, calendar: calendar, locale: enLocale) == nil)
+
+        // Exactly 30 hours -> not more than 30 hours
+        let thirtyHours = calendar.date(byAdding: .hour, value: 30, to: createdAt)!
+        #expect(!store.isPlanStale(at: thirtyHours))
+        #expect(store.staleBannerMessage(at: thirtyHours, calendar: calendar, locale: enLocale) == nil)
+
+        // 4. More than 30 hours (e.g. 31 hours later at Friday 09:00 UTC) -> stale banner shown
+        let staleTime = calendar.date(byAdding: .hour, value: 31, to: createdAt)!
+        #expect(store.isPlanStale(at: staleTime))
+        let message = try #require(store.staleBannerMessage(at: staleTime, calendar: calendar, locale: enLocale))
+        #expect(message == "Articulate hasn't planned since Thursday 2:00 AM")
+
+        // 5. When stale, activePlan is expired (nil) so Encore serves reviews from its own state
+        #expect(store.activePlan(at: staleTime) == nil)
+
+        // 6. When a fresh plan arrives, stale banner goes away
+        let freshCreatedAt = staleTime
+        let freshValidUntil = calendar.date(byAdding: .hour, value: 24, to: freshCreatedAt)!
+        let freshPlan = DailyPlan(
+            header: PlanHeader(id: "plan-test-fresh", createdAt: freshCreatedAt),
+            date: "2026-11-20",
+            validUntil: freshValidUntil,
+            reviewScope: ["mat305"],
+            new: []
+        )
+        store.applyPlan(freshPlan, at: freshCreatedAt)
+
+        #expect(!store.isPlanStale(at: freshCreatedAt))
+        #expect(store.staleBannerMessage(at: freshCreatedAt, calendar: calendar, locale: enLocale) == nil)
+
+        // 7. iPhone syncs planCreatedAt via defaults and detects staleness
+        let iPhoneStore = DailyPlanStore(defaults: defaults)
+        #expect(!iPhoneStore.isPlanStale(at: freshCreatedAt))
+
+        // When time progresses >30h past freshPlan on iPhone
+        let futureTime = calendar.date(byAdding: .hour, value: 31, to: freshCreatedAt)!
+        #expect(iPhoneStore.isPlanStale(at: futureTime))
+        let iPhoneMessage = try #require(iPhoneStore.staleBannerMessage(at: futureTime, calendar: calendar, locale: enLocale))
+        #expect(iPhoneMessage == "Articulate hasn't planned since Friday 9:00 AM")
+
+        // 8. Over 7 days old formats with month and day
+        let longStaleTime = calendar.date(byAdding: .day, value: 10, to: freshCreatedAt)!
+        let longMessage = try #require(store.staleBannerMessage(at: longStaleTime, calendar: calendar, locale: enLocale))
+        #expect(longMessage.contains("Articulate hasn't planned since"))
+        #expect(longMessage.contains("Nov 20"))
+    }
+
     @Test func syncRoundTripToIPhone() throws {
         let suite = "test.plan.sync.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suite)!

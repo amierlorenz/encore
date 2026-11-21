@@ -9,6 +9,7 @@ struct TodaySection: View {
     let reviewedToday: Int
     var plan: DailyPlan? = nil
     var isPlanDone: Bool = false
+    var staleMessage: String? = nil
     let onReview: () -> Void
     let onLearn: () -> Void
     var onStartPlan: (() -> Void)? = nil
@@ -18,6 +19,9 @@ struct TodaySection: View {
         Section {
         } header: {
             VStack(spacing: 18) {
+                if let staleMessage {
+                    StalePlanBanner(message: staleMessage)
+                }
                 SectionTitle(title: "Today")
                 HStack(spacing: 12) {
                     StatCard(value: due, title: "Due for review", systemImage: "arrow.counterclockwise", tint: due > 0 ? .orange : nil)

@@ -38,7 +38,62 @@ public final class DailyPlanStore: @unchecked Sendable {
     public var planCreatedAt: Date? {
         lock.lock()
         defer { lock.unlock() }
+        let timestamp = defaults.double(forKey: "planCreatedAt")
+        if timestamp > 0 {
+            if let inMemory = _planCreatedAt, abs(inMemory.timeIntervalSince1970 - timestamp) < 0.001 {
+                return inMemory
+            }
+            let date = Date(timeIntervalSince1970: timestamp)
+            _planCreatedAt = date
+            return date
+        }
         return _planCreatedAt
+    }
+
+    /// Threshold beyond which a plan is considered stale (30 hours).
+    public static let stalePlanThreshold: TimeInterval = 30 * 3600
+
+    /// Whether the latest applied plan is more than 30 hours old.
+    /// Returns `false` if no plan has ever arrived.
+    public func isPlanStale(at now: Date = .now) -> Bool {
+        guard let createdAt = planCreatedAt else { return false }
+        return now.timeIntervalSince(createdAt) > Self.stalePlanThreshold
+    }
+
+    /// Formats the plan date and time for the stale plan banner ("<day time>").
+    public static func formatPlanDate(
+        _ date: Date,
+        relativeTo now: Date = .now,
+        calendar: Calendar = .current,
+        locale: Locale? = nil,
+        timeZone: TimeZone? = nil
+    ) -> String {
+        let tz = timeZone ?? calendar.timeZone
+        let days = calendar.dateComponents([.day], from: date, to: now).day ?? 0
+        var style: Date.FormatStyle
+        if days >= 7 {
+            style = Date.FormatStyle.dateTime.month(.abbreviated).day().hour().minute()
+        } else {
+            style = Date.FormatStyle.dateTime.weekday(.wide).hour().minute()
+        }
+        if let locale {
+            style = style.locale(locale)
+        }
+        style.timeZone = tz
+        return date.formatted(style).replacingOccurrences(of: "\u{202F}", with: " ")
+    }
+
+    /// Returns the banner message if the plan is stale, e.g. "Articulate hasn't planned since Thursday 2:00 AM".
+    /// Returns `nil` if no plan has arrived or if the plan is not stale (<= 30 hours old).
+    public func staleBannerMessage(
+        at now: Date = .now,
+        calendar: Calendar = .current,
+        locale: Locale? = nil,
+        timeZone: TimeZone? = nil
+    ) -> String? {
+        guard isPlanStale(at: now), let createdAt = planCreatedAt else { return nil }
+        let formatted = Self.formatPlanDate(createdAt, relativeTo: now, calendar: calendar, locale: locale, timeZone: timeZone)
+        return "Articulate hasn't planned since \(formatted)"
     }
 
     /// Applies a newly received or loaded plan.
@@ -83,10 +138,10 @@ public final class DailyPlanStore: @unchecked Sendable {
         do {
             let data = try Data(contentsOf: url)
             let plan = try JSONDecoder().decode(DailyPlan.self, from: data)
+            applyPlan(plan, at: now)
             if plan.isExpired(at: now) {
                 return nil
             }
-            applyPlan(plan, at: now)
             return plan
         } catch {
             return nil

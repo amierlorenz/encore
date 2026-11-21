@@ -1,0 +1,89 @@
+{
+  "$defs": {
+    "Header": {
+      "properties": {
+        "schema": {
+          "enum": [
+            "encore.import",
+            "encore.plan",
+            "encore.state",
+            "encore.library",
+            "encore.attempt",
+            "encore.flag"
+          ],
+          "title": "Schema",
+          "type": "string"
+        },
+        "version": {
+          "title": "Version",
+          "type": "integer"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "producer": {
+          "title": "Producer",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema",
+        "version",
+        "id",
+        "created_at",
+        "producer"
+      ],
+      "title": "Header",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "header": {
+      "$ref": "#/$defs/Header"
+    },
+    "exportedAt": {
+      "format": "date-time",
+      "title": "Exportedat",
+      "type": "string"
+    },
+    "courses": {
+      "default": [],
+      "items": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Courses",
+      "type": "array"
+    },
+    "exams": {
+      "default": [],
+      "items": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Exams",
+      "type": "array"
+    },
+    "concepts": {
+      "default": [],
+      "items": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Concepts",
+      "type": "array"
+    }
+  },
+  "required": [
+    "header",
+    "exportedAt"
+  ],
+  "title": "Library",
+  "type": "object"
+}

@@ -83,4 +83,21 @@ struct SchemaFileTests {
         #expect(required.contains("sessionKind"))
         #expect(required.contains("calibrated"))
     }
+
+    @Test func librarySchemaIsValid() throws {
+        let url = URL(filePath: #filePath)
+            .deletingLastPathComponent()
+            .appending(path: "../../../Schema/encore.library.v1.json")
+            .standardizedFileURL
+        let data = try Data(contentsOf: url)
+        let schema = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+        #expect(schema["title"] as? String == "Library")
+
+        let defs = try #require(schema["$defs"] as? [String: Any])
+        #expect(defs["Header"] != nil)
+
+        let required = try #require(schema["required"] as? [String])
+        #expect(required.contains("header"))
+        #expect(required.contains("exportedAt"))
+    }
 }

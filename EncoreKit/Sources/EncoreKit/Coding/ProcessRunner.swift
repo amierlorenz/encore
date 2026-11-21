@@ -35,32 +35,49 @@ enum ProcessRunner {
         process.standardError = stderrHandle
         process.standardInput = FileHandle.nullDevice
 
-        let timedOut = try await withThrowingTaskGroup(of: Bool.self) { group in
-            group.addTask {
-                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, any Error>) in
-                    process.terminationHandler = { _ in continuation.resume() }
-                    do {
-                        try process.run()
-                    } catch {
-                        process.terminationHandler = nil
-                        continuation.resume(throwing: error)
+        // Every exit path, including errors and cancellation, must stop the child;
+        // otherwise it is reparented to launchd and keeps running.
+        defer { stop(process) }
+
+        try Task.checkCancellation()
+        let timedOut = try await withTaskCancellationHandler {
+            try await withThrowingTaskGroup(of: Bool.self) { group in
+                group.addTask {
+                    try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, any Error>) in
+                        process.terminationHandler = { _ in continuation.resume() }
+                        do {
+                            try process.run()
+                        } catch {
+                            process.terminationHandler = nil
+                            continuation.resume(throwing: error)
+                            return
+                        }
+                        // Cancelled while launching: the handler saw no running process yet.
+                        if Task.isCancelled { stop(process) }
                     }
+                    return false
                 }
-                return false
+                group.addTask {
+                    try await Task.sleep(for: timeout)
+                    return true
+                }
+                let first = try await group.next() ?? false
+                if first {
+                    // Signal the group, not just the leader: if only the leader
+                    // exits, `stop` would skip the children it left behind.
+                    let pid = process.processIdentifier
+                    kill(-pid, SIGTERM)
+                    try? await Task.sleep(for: .milliseconds(300))
+                    kill(-pid, SIGKILL)
+                }
+                group.cancelAll()
+                return first
             }
-            group.addTask {
-                try await Task.sleep(for: timeout)
-                return true
-            }
-            let first = try await group.next() ?? false
-            if first {
-                process.terminate()
-                try? await Task.sleep(for: .milliseconds(300))
-                if process.isRunning { kill(process.processIdentifier, SIGKILL) }
-            }
-            group.cancelAll()
-            return first
+        } onCancel: {
+            // Killing the child resumes the continuation, so the group can finish.
+            stop(process)
         }
+        try Task.checkCancellation()
 
         return Output(
             status: process.terminationStatus,
@@ -68,6 +85,15 @@ enum ProcessRunner {
             stderr: (try? String(contentsOf: stderrURL, encoding: .utf8)) ?? "",
             timedOut: timedOut
         )
+    }
+
+    /// Kills the child's whole process group, so tools it spawned (like
+    /// `swift-frontend` under `xcrun swiftc`) die with it. `Process` makes each
+    /// child its own group leader.
+    private static func stop(_ process: Process) {
+        guard process.isRunning else { return }
+        let pid = process.processIdentifier
+        if kill(-pid, SIGKILL) != 0 { kill(pid, SIGKILL) }
     }
 }
 #endif

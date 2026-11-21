@@ -24,7 +24,7 @@ struct FullProblemCardView: View {
             } header: {
                 Text(prompt.kind.displayName)
             } footer: {
-                FlagPromptButton(prompt: prompt)
+                FlagPromptButton(prompt: prompt, concept: concept)
             }
             Section("1. Which approach fits?") {
                 if let options = problem.options {

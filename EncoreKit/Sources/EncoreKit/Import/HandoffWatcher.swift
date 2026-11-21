@@ -48,8 +48,12 @@ public final class HandoffWatcher {
     ) {
         self.handoffFolder = handoffFolder
         self.context = context
-        self.planHandler = planHandler ?? { url in
-            _ = try? DailyPlanStore.shared.loadFromFile(at: url)
+        self.planHandler = planHandler ?? { [context] url in
+            if url.lastPathComponent == "plan.json" {
+                _ = try? DailyPlanStore.shared.loadFromFile(at: url)
+            } else if url.lastPathComponent.hasPrefix("postclass-") {
+                _ = PostclassInbox(handoffFolder: handoffFolder, context: context).process(url)
+            }
         }
     }
 

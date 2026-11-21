@@ -121,8 +121,13 @@ public final class SessionEngine {
         var rng = SystemRandomNumberGenerator()
         let allConcepts = try context.fetch(FetchDescriptor<Concept>())
         let snapshots = allConcepts.map(ConceptSnapshot.init)
-        let builder = DailyPlanSessionBuilder(plan: plan, supportsCodeExecution: supportsCodeExecution)
-        let fullQueue = builder.build(from: snapshots, now: now, using: &rng)
+        let fullQueue: [SessionItem]
+        if plan.kind == "postclass" {
+            fullQueue = try PostclassQuiz.items(for: plan, in: context, supportsCodeExecution: supportsCodeExecution)
+        } else {
+            let builder = DailyPlanSessionBuilder(plan: plan, supportsCodeExecution: supportsCodeExecution)
+            fullQueue = builder.build(from: snapshots, now: now, using: &rng)
+        }
 
         let queue: [SessionItem]
         if let chunkIndex {
@@ -233,6 +238,9 @@ public final class SessionEngine {
         isFinished = true
         record.endedAt = now
         try context.save()
+        if sessionKind == PostclassQuiz.sessionKind {
+            PostclassInbox.cleanupAnswered(in: context)
+        }
         NotificationCenter.default.post(name: .studySessionDidFinish, object: sessionID)
         StateExportCoordinator.shared.schedulePostSessionExport(context: context)
     }

@@ -32,11 +32,21 @@ public struct ReviewRecorder {
         let wasDue = concept.isDue(at: now)
         let examDates = try upcomingExams(after: now).filter { $0.covers(concept) }.map(\.date)
         let courseID = concept.unit?.course?.externalID
+        let postclass: ReviewPolicy.PostclassStep? = if sessionKind == PostclassQuiz.sessionKind {
+            .quiz
+        } else if !isNew, !(mode == .practice && !wasDue && grade.isPass), concept.awaitsFirstReviewAfterPostclass {
+            .firstReview
+        } else {
+            nil
+        }
 
         concept.scheduleState = policy.next(
             concept.scheduleState,
             grade: grade,
-            context: .init(mode: mode, isNew: isNew, wasDue: wasDue, examDates: examDates, courseID: courseID, now: now)
+            context: .init(
+                mode: mode, isNew: isNew, wasDue: wasDue, examDates: examDates, courseID: courseID,
+                postclass: postclass, now: now
+            )
         )
         if isNew {
             concept.introducedAt = now
@@ -55,7 +65,7 @@ public struct ReviewRecorder {
             attemptID: attemptID,
             answerText: answerText,
             sessionKind: sessionKind,
-            calibrated: calibrated
+            calibrated: calibrated && postclass != .firstReview
         )
         context.insert(log)
         log.concept = concept

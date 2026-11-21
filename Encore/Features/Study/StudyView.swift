@@ -23,9 +23,15 @@ struct StudyView: View {
         }
         .onChange(of: navigation.pendingSession, initial: true, startPending)
         .onChange(of: navigation.pendingDailyPlan, initial: false, startPending)
+        .onChange(of: navigation.pendingPostclassPlan, initial: false, startPending)
     }
 
     private func startPending() {
+        if let plan = navigation.pendingPostclassPlan {
+            navigation.pendingPostclassPlan = nil
+            startPlan(plan, chunkIndex: nil)
+            return
+        }
         if let plan = navigation.pendingDailyPlan {
             let chunk = navigation.pendingChunkIndex
             navigation.pendingDailyPlan = nil
@@ -47,7 +53,7 @@ struct StudyView: View {
                 context: modelContext,
                 supportsCodeExecution: Platform.supportsCodeExecution
             )
-            message = engine.isFinished ? "Today's plan has no remaining items." : nil
+            message = engine.isFinished ? (plan.kind == "postclass" ? "Post-class quiz has no remaining items." : "Today's plan has no remaining items.") : nil
             self.engine = engine
         } catch {
             Logger.app.error("Starting plan session failed: \(error)")

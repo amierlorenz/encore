@@ -13,6 +13,7 @@ final class SettingsSync {
         SettingsKey.dailyPlanData,
         SettingsKey.planIdSeen,
         SettingsKey.planCreatedAt,
+        SettingsKey.postclassPlansData,
     ]
 
     private let cloud = NSUbiquitousKeyValueStore.default

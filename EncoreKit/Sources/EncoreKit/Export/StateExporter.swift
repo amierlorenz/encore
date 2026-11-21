@@ -178,6 +178,8 @@ public struct AttemptRecord: Codable, Hashable, Sendable {
     public var msTaken: Int
     public var sessionKind: String
     public var calibrated: Bool
+    /// Additive: the plan the attempt was answered in; omitted outside plan sessions.
+    public var planId: String?
 
     public init(
         attemptId: String,
@@ -188,7 +190,8 @@ public struct AttemptRecord: Codable, Hashable, Sendable {
         grade: Int,
         msTaken: Int,
         sessionKind: String,
-        calibrated: Bool
+        calibrated: Bool,
+        planId: String? = nil
     ) {
         self.attemptId = attemptId
         self.promptId = promptId
@@ -199,6 +202,7 @@ public struct AttemptRecord: Codable, Hashable, Sendable {
         self.msTaken = msTaken
         self.sessionKind = sessionKind
         self.calibrated = calibrated
+        self.planId = planId
     }
 
     public func encodedLine() throws -> String {
@@ -330,7 +334,8 @@ public struct StateExporter {
                 grade: log.grade.numericValue,
                 msTaken: max(0, Int((log.duration * 1000).rounded())),
                 sessionKind: log.sessionKind,
-                calibrated: log.calibrated
+                calibrated: log.calibrated,
+                planId: log.planID
             )
             lines.append(try record.encodedLine())
         }

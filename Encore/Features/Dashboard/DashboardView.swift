@@ -36,6 +36,16 @@ struct DashboardView: View {
                     },
                     onKeepPracticing: {
                         navigation.startSession(SessionConfig(mode: .practice))
+                    },
+                    onStartPracticeTest: {
+                        if let activePlan {
+                            navigation.startDailyPlan(activePlan, part: .practiceTest)
+                        }
+                    },
+                    onStartReviewQuiz: {
+                        if let activePlan {
+                            navigation.startDailyPlan(activePlan, part: .reviewQuiz)
+                        }
                     }
                 )
                 if !overview.exams.isEmpty {

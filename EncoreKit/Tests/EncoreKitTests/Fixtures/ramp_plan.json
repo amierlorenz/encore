@@ -1,0 +1,28 @@
+{
+  "header": {
+    "schema": "encore.plan",
+    "version": 1,
+    "id": "plan-01JD0000000000000000000041",
+    "created_at": "2026-11-20T02:00:00Z",
+    "producer": "articulate 0.3.0"
+  },
+  "kind": "daily",
+  "date": "2026-11-20",
+  "validUntil": "2026-11-21T02:00:00-05:00",
+  "reviewScope": ["csc301", "mat305"],
+  "new": [
+    {"conceptId": "mat305.bayes", "promptIds": [], "reason": "core"},
+    {"conceptId": "csc301.fork", "promptIds": [], "reason": "standard"}
+  ],
+  "examFocus": [{"examId": "mat305.x.final", "rampDay": 9}],
+  "budgetMinutes": {"target": 20, "planned": 35},
+  "kindsMix": {"freeRecallMin": 0.5},
+  "readingShare": 0.0,
+  "intervalCaps": [],
+  "practiceTest": {"examId": "mat305.x.final", "itemCount": 15},
+  "reviewQuiz": {"examId": "csc301.x.midterm", "conceptIds": ["csc301.locks", "csc301.threads"]},
+  "reviewLimit": 3,
+  "reviewPriority": ["mat305.x.final"],
+  "newPaused": true,
+  "holdNewForExams": ["csc301.x.midterm"]
+}
